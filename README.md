@@ -1,16 +1,19 @@
 
 1. Install needed pakages
+
 sudo apt install g++ python3 python3-dev pkg-config sqlite3 cmake ninja-build git python3-setuptools clang-format libc6-dev libc6-dev-i386 libclang-dev llvm-dev automake python3-pip
 
 pip3 install PyBindGen pygccxml cxxfilt
 
 2. Download ns3
+
 git clone https://gitlab.com/nsnam/ns-3-allinone.git
 
 cd ns-3-allinone
 ./download.py -n ns-3.36
 
 3. Build
+
 ./ns3 configure --enable-examples --enable-tests --enable-python-bindings
 ./ns3 build
 ./ns3 run hello-simulator
