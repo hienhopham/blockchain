@@ -10,6 +10,7 @@
 #include "ns3/net-device-container.h"
 #include <random>
 #include <vector>
+#include "ipv4-address-helper-custom.h"
 
 
 namespace ns3 {
@@ -24,7 +25,7 @@ namespace ns3 {
         Ptr<Node> GetNode (uint32_t id);
 
         void InstallStack (InternetStackHelper stack);
-        void AssignIpv4Addresses (Ipv4AddressHelper ip);
+        void AssignIpv4Addresses (Ipv4AddressHelperCustom ip);
         Ipv4InterfaceContainer GetIpv4InterfaceContainer (void) const;
         std::map<uint32_t, std::vector<Ipv4Address>> GetNodesConnectionsIps (void) const;
 

@@ -12,6 +12,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "topology-helper.h"
+#include "ipv4-address-helper-custom.h"
 
 
 namespace ns3 {
@@ -57,11 +58,13 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 		{
 			for(std::vector<uint32_t>::const_iterator it = node.second.begin(); it != node.second.end(); it++)
     		{
-				m_totalNoLinks++;
-				NetDeviceContainer newDevices;
-				newDevices.Add (pointToPoint.Install (m_nodes.at(node.first).Get(0),m_nodes.at (*it).Get (0)));
-		    	m_devices.push_back (newDevices);
-				NS_LOG_INFO("\nDevice " << m_totalNoLinks << " has: " << newDevices.Get(0) << " and " << newDevices.Get(1));
+				if(*it > node.first) {
+					m_totalNoLinks++;
+					NetDeviceContainer newDevices;
+					newDevices.Add (pointToPoint.Install (m_nodes.at(node.first).Get(0),m_nodes.at (*it).Get (0)));
+					m_devices.push_back (newDevices);
+					NS_LOG_INFO("\nDevice " << m_totalNoLinks << " has: " << newDevices.Get(0) << " and " << newDevices.Get(1));
+				}
 			}
 		}
 
@@ -90,7 +93,7 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 	}
 
 	void
-	TopologyHelper::AssignIpv4Addresses (Ipv4AddressHelper ip)
+	TopologyHelper::AssignIpv4Addresses (Ipv4AddressHelperCustom ip)
 	{
 		NS_LOG_FUNCTION(this);
 		

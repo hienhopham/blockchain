@@ -115,6 +115,8 @@ namespace ns3 {
         NS_LOG_INFO ("Node " << GetNode()->GetId() << ": m_numberOfPeers = " << m_numberOfPeers);
         NS_LOG_INFO ("Node " << GetNode()->GetId() << ": My peers are");
 
+        std::cout << "\nNode: " << GetNode()->GetId() << " - " << m_peersAddresses.size()<<"\n";
+
         for (auto it = m_peersAddresses.begin(); it != m_peersAddresses.end(); it++)
             NS_LOG_INFO("\t" << *it);
 
@@ -222,6 +224,7 @@ namespace ns3 {
     RsuNode::HandleAccept(Ptr<Socket> socket, const Address& from)
     {
         NS_LOG_FUNCTION(this);
+        NS_LOG_INFO("HandleAccept");
         socket->SetRecvCallback (MakeCallback(&RsuNode::HandleRead, this));
     }
 
@@ -287,12 +290,14 @@ namespace ns3 {
         rapidjson::Writer<rapidjson::StringBuffer> tranWriter(transactionInfo);
         transD.Accept(tranWriter);
 
+        Ptr<Packet> packet = Create<Packet> (100);
         for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
         {
-            const uint8_t delimiter[] = "#";
+            // const uint8_t delimiter[] = "#";
+            NS_LOG_INFO("Transaction: node-" <<newTrans.GetRsuNodeId()<<", m_peersAddresses-"<<*i);
 
-            m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(transactionInfo.GetString()), transactionInfo.GetSize(), 0);
-            m_peersSockets[*i]->Send(delimiter, 1, 0);
+            m_peersSockets[*i]->Send(packet);
+            // m_peersSockets[*i]->Send(delimiter, 1, 0);
         
         }
         //std::cout<< "time : "<<Simulator::Now().GetSeconds() << ", Node type: "<< m_committerType <<" - NodeId: " <<GetNode()->GetId() << " created and sent transaction\n";

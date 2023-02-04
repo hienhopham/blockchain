@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include "topology-helper.h"
 #include "rsu-node.h"
+#include "ipv4-address-helper-custom.h"
 
 using namespace ns3;
 
@@ -39,9 +40,9 @@ int main(int argc, char *argv[])
 	InternetStackHelper stack;
 	topologyHelper.InstallStack(stack);
 
-	Ipv4AddressHelper address;
-  	address.SetBase ("10.1.1.0", "255.255.255.0");
-	topologyHelper.AssignIpv4Addresses(address);
+	// Ipv4AddressHelperCustom address;
+  	// address.SetBase ("10.1.1.0", "255.255.255.0");
+	topologyHelper.AssignIpv4Addresses(Ipv4AddressHelperCustom("1.0.0.0", "255.255.255.0", false));
 
 	ipv4Interfacecontainer = topologyHelper.GetIpv4InterfaceContainer();
     nodesConnections = topologyHelper.GetNodesConnectionsIps();
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 
     for(auto &node : nodesConnections)
     {
-		factory.Set("Ip", AddressValue(InetSocketAddress(Ipv4Address("10.1.1.1"))));
+		factory.Set("Ip", AddressValue(InetSocketAddress(Ipv4Address::GetAny(), 8333)));
 		
         Ptr<Node> targetNode = topologyHelper.GetNode(node.first);
 		Ptr<RsuNode> rsuNode = factory.Create<RsuNode>();
