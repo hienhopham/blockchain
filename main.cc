@@ -21,8 +21,15 @@ NS_LOG_COMPONENT_DEFINE("Blockchain");
 
 int main(int argc, char *argv[])
 {
+
+	LogComponentEnable ("Blockchain", LOG_LEVEL_INFO);
+	LogComponentEnable ("RsuNode", LOG_LEVEL_INFO);
+	LogComponentEnable ("TopologyHelper", LOG_LEVEL_INFO);
+
 	uint32_t numOfRsu = 2;
 	uint32_t numOfIov = 2;
+
+	const uint16_t blockchainPort = 8333;
 
 	CommandLine cmd (__FILE__);
 	cmd.AddValue ("numOfRsu", "Number of rsu nodes", numOfRsu);
@@ -35,13 +42,12 @@ int main(int argc, char *argv[])
 	Ipv4InterfaceContainer  ipv4Interfacecontainer;
     std::map<uint32_t, std::vector<Ipv4Address>> nodesConnections;
 
+	//Initialize the topology
 	TopologyHelper topologyHelper(numOfRsu, numOfIov);
 
+	//Install internet stack on every node then assign ips for them
 	InternetStackHelper stack;
 	topologyHelper.InstallStack(stack);
-
-	// Ipv4AddressHelperCustom address;
-  	// address.SetBase ("10.1.1.0", "255.255.255.0");
 	topologyHelper.AssignIpv4Addresses(Ipv4AddressHelperCustom("1.0.0.0", "255.255.255.0", false));
 
 	ipv4Interfacecontainer = topologyHelper.GetIpv4InterfaceContainer();
@@ -49,22 +55,17 @@ int main(int argc, char *argv[])
 
 	NS_LOG_INFO("Start creating Rsu node");
 	ApplicationContainer rsuNodes;
-	// ObjectFactory factory;
-	// factory.Set("Local", AddressValue(InetSocketAddress(Ipv4Address::GetAny())));
-
 	ObjectFactory factory;
 	const std::string typeId = "ns3::RsuNode";
 	factory.SetTypeId(typeId);
+	factory.Set("Ip", AddressValue(InetSocketAddress(Ipv4Address::GetAny(), blockchainPort)));
 
     for(auto &node : nodesConnections)
     {
-		factory.Set("Ip", AddressValue(InetSocketAddress(Ipv4Address::GetAny(), 8333)));
-		
         Ptr<Node> targetNode = topologyHelper.GetNode(node.first);
 		Ptr<RsuNode> rsuNode = factory.Create<RsuNode>();
 
 		rsuNode->SetPeersAddresses(node.second);
-
 		targetNode->AddApplication(rsuNode);
 
         rsuNodes.Add(rsuNode);

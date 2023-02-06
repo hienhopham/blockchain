@@ -42,20 +42,10 @@ namespace ns3 {
         return tid;
     }
 
-    RsuNode::RsuNode()
+    RsuNode::RsuNode(void) : m_blockchainPort(8333)
 
     {
         NS_LOG_FUNCTION(this);
-        m_listenSocket = 0;
-        m_numberOfPeers = m_peersAddresses.size();
-        m_transactionId = 1;
-    }
-
-    RsuNode::RsuNode(int nodeId)
-
-    {
-        NS_LOG_FUNCTION(this);
-        m_nodeId = nodeId;
         m_listenSocket = 0;
         m_numberOfPeers = m_peersAddresses.size();
         m_transactionId = 1;
@@ -111,34 +101,16 @@ namespace ns3 {
         // Create the socket if not already
 
         srand(time(NULL) + GetNode()->GetId());
-        NS_LOG_INFO ("Node " << GetNode()->GetId() << ": ip = " << m_nodeIp);
-        NS_LOG_INFO ("Node " << GetNode()->GetId() << ": m_numberOfPeers = " << m_numberOfPeers);
-        NS_LOG_INFO ("Node " << GetNode()->GetId() << ": My peers are");
+        // NS_LOG_INFO ("Node " << GetNode()->GetId() << ": ip = " << m_nodeIp);
+        // NS_LOG_INFO ("Node " << GetNode()->GetId() << ": m_numberOfPeers = " << m_numberOfPeers);
 
-        std::cout << "\nNode: " << GetNode()->GetId() << " - " << m_peersAddresses.size()<<"\n";
-
-        for (auto it = m_peersAddresses.begin(); it != m_peersAddresses.end(); it++)
-            NS_LOG_INFO("\t" << *it);
-
+        // Set up the listening socket, listen on every ip
         if (!m_listenSocket)
         {
-            m_listenSocket = Socket::CreateSocket (GetNode(), UdpSocketFactory::GetTypeId ());
+            m_listenSocket = Socket::CreateSocket (GetNode(), TcpSocketFactory::GetTypeId ());
             m_listenSocket->Bind (m_nodeIp);
             m_listenSocket->Listen ();
             m_listenSocket->ShutdownSend ();
-            if (addressUtils::IsMulticast (m_nodeIp))
-            {
-                Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (m_listenSocket);
-                if (udpSocket)
-                {
-                    // equivalent to setsockopt (MCAST_JOIN_GROUP)
-                    udpSocket->MulticastJoinGroup (0, m_nodeIp);
-                }
-                else
-                {
-                    NS_FATAL_ERROR ("Error: joining multicast on a non-UDP socket");
-                }
-            }
         }
 
         m_listenSocket->SetRecvCallback (MakeCallback (&RsuNode::HandleRead, this));
@@ -149,16 +121,16 @@ namespace ns3 {
                 MakeCallback (&RsuNode::HandlePeerClose, this),
                 MakeCallback (&RsuNode::HandlePeerError, this));
 
-        NS_LOG_INFO("Node " << GetNode()->GetId() << ": Before creating sockets");
+        // Set up the sending socket for every peer
         for (std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
         {
             m_peersSockets[*i] = Socket::CreateSocket (GetNode (), TcpSocketFactory::GetTypeId ());
-            m_peersSockets[*i]->Connect (InetSocketAddress (*i, 8333));
+            m_peersSockets[*i]->Connect (InetSocketAddress (*i, m_blockchainPort));
         }
 
-        NS_LOG_INFO ("Node " << GetNode()->GetId() << ": After creating sockets");
-
-        CreateTransaction(0,1);
+        if (GetNode()->GetId() == 1) {
+            CreateTransaction(0,1);
+        }
     }
 
     void
@@ -171,7 +143,6 @@ namespace ns3 {
             m_peersSockets[*i]->Close ();
         }
 
-
         if (m_listenSocket)
         {
             m_listenSocket->Close ();
@@ -183,12 +154,8 @@ namespace ns3 {
     void
     RsuNode::HandleRead(Ptr<Socket> socket)
     {
-        NS_LOG_INFO("Recieve transaction");
-        NS_LOG_INFO(this << socket);
         Ptr<Packet> packet;
         Address from;
-        //std::cout<<"Node : "<< GetNode()->GetId()<< " Receive packet\n";
-
         //double newBlockReceiveTime = Simulator::Now().GetSeconds();
 
         while((packet = socket->RecvFrom(from)))
@@ -200,10 +167,6 @@ namespace ns3 {
 
             if(InetSocketAddress::IsMatchingType(from))
             {
-                /*
-                 * We may receive more than one packets simultaneously on the socket,
-                 * so we have to parse each one of them.
-                 */
                 std::string delimiter = "#";
                 std::string parsedPacket;
                 char *packetInfo = new char[packet->GetSize() + 1];
@@ -214,7 +177,49 @@ namespace ns3 {
 
                 totalStream << m_bufferedData[from] << packetInfo;
                 std::string totalReceivedData(totalStream.str());
-                NS_LOG_INFO("Node " << m_nodeId << "Total Received Data : " << totalReceivedData);
+                size_t pos = totalReceivedData.find(delimiter);
+                parsedPacket = totalReceivedData.substr(0,pos);
+
+                rapidjson::Document d;
+                d.Parse(parsedPacket.c_str());
+
+                if(!d.IsObject())
+                {
+                    NS_LOG_WARN("The parsed packet is corrupted");
+                    totalReceivedData.erase(0, pos + delimiter.length());
+                    continue;
+                }
+
+                rapidjson::StringBuffer buffer;
+                rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+                d.Accept(writer);
+
+
+                switch(d["message"].GetInt())
+                {
+                    case REQUEST_TRANS:
+                    {
+                        // TODO: verify the transaction using smart contract - Tuan
+
+                        // TODO: If valid, sign transaction - Tuan
+
+                        // After signing, send response
+                        d.AddMember("responseFrom", GetNode()->GetId(), d.GetAllocator());
+                        SendMessage(REQUEST_TRANS, RESPONSE_TRANS, d, from);
+                        std::cout<<"Node " << GetNode()->GetId() << " - REQUEST_TRANS \n";
+                    }
+
+                    case RESPONSE_TRANS:
+                    {
+    
+                        uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
+                        uint32_t requestTransFrom = (uint32_t) d["transactions"][0]["rsuNodeId"].GetInt();
+                        if (requestTransFrom == GetNode()->GetId()) {
+                             // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
+                            std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
+                        }
+                    }
+                }
             }
         }
         
@@ -224,7 +229,6 @@ namespace ns3 {
     RsuNode::HandleAccept(Ptr<Socket> socket, const Address& from)
     {
         NS_LOG_FUNCTION(this);
-        NS_LOG_INFO("HandleAccept");
         socket->SetRecvCallback (MakeCallback(&RsuNode::HandleRead, this));
     }
 
@@ -260,8 +264,8 @@ namespace ns3 {
         value.SetString("transaction");
         transD.AddMember("type", value, transD.GetAllocator());
 
-        // value = REQUEST_TRANS;
-        // transD.AddMember("message", value, transD.GetAllocator());
+        value = REQUEST_TRANS;
+        transD.AddMember("message", value, transD.GetAllocator());
 
         value = newTrans.GetRsuNodeId();
         transInfo.AddMember("rsuNodeId", value, transD.GetAllocator());
@@ -284,20 +288,15 @@ namespace ns3 {
         m_transaction.push_back(newTrans);
         //m_notValidatedTransaction.push_back(newTrans);
 
-        NS_LOG_INFO("Transaction: node-" <<newTrans.GetRsuNodeId()<<", paymment-"<<newTrans.GetPayment()<<", winner-"<<newTrans.GetWinnerId());
-
         rapidjson::StringBuffer transactionInfo;
         rapidjson::Writer<rapidjson::StringBuffer> tranWriter(transactionInfo);
         transD.Accept(tranWriter);
 
-        Ptr<Packet> packet = Create<Packet> (100);
         for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
         {
-            // const uint8_t delimiter[] = "#";
-            NS_LOG_INFO("Transaction: node-" <<newTrans.GetRsuNodeId()<<", m_peersAddresses-"<<*i);
-
-            m_peersSockets[*i]->Send(packet);
-            // m_peersSockets[*i]->Send(delimiter, 1, 0);
+            const uint8_t delimiter[] = "#";
+            m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(transactionInfo.GetString()), transactionInfo.GetSize(), 0);
+            m_peersSockets[*i]->Send(delimiter, 1, 0);
         
         }
         //std::cout<< "time : "<<Simulator::Now().GetSeconds() << ", Node type: "<< m_committerType <<" - NodeId: " <<GetNode()->GetId() << " created and sent transaction\n";
@@ -305,6 +304,51 @@ namespace ns3 {
 
         // ScheduleNextTransaction();
 
+    }
+
+    void
+    RsuNode::SendMessage(enum Messages receivedMessage, enum Messages responseMessage, rapidjson::Document &d, Ptr<Socket> outgoingSocket)
+    {
+        NS_LOG_FUNCTION(this);
+
+        const uint8_t delimiter[] = "#";
+
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+        d["message"].SetInt(responseMessage);
+        d.Accept(writer);
+        
+        outgoingSocket->Send(reinterpret_cast<const uint8_t*>(buffer.GetString()), buffer.GetSize(), 0);
+        outgoingSocket->Send(delimiter, 1, 0);
+
+    }
+
+    void
+    RsuNode::SendMessage(enum Messages receivedMessage, enum Messages responseMessage, rapidjson::Document &d, Address &outgoingAddress)
+    {
+        NS_LOG_FUNCTION(this);
+        
+        const uint8_t delimiter[] = "#";
+
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+        d["message"].SetInt(responseMessage);
+        d.Accept(writer);
+        
+        Ipv4Address outgoingIpv4Address = InetSocketAddress::ConvertFrom(outgoingAddress).GetIpv4();
+        std::map<Ipv4Address, Ptr<Socket>>::iterator it = m_peersSockets.find(outgoingIpv4Address);
+
+        if(it == m_peersSockets.end())
+        {
+            m_peersSockets[outgoingIpv4Address] = Socket::CreateSocket(GetNode(), TcpSocketFactory::GetTypeId());
+            m_peersSockets[outgoingIpv4Address]->Connect(InetSocketAddress(outgoingIpv4Address, m_blockchainPort));
+        }
+
+        m_peersSockets[outgoingIpv4Address]->Send(reinterpret_cast<const uint8_t*>(buffer.GetString()), buffer.GetSize(), 0);
+        m_peersSockets[outgoingIpv4Address]->Send(delimiter, 1, 0);
+        
     }
 
 

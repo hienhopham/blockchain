@@ -35,12 +35,9 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 			{
 				if (j != i)
 				{
-					// m_nodesConnections[j].push_back(i);
 					m_nodesConnections[i].push_back(j);
 				}
 			}
-			NS_LOG_INFO("\nThe total number of connections for rsu "<< i << " is: " << m_nodesConnections[i].size());
-
 		}
 
 		PointToPointHelper pointToPoint;
@@ -63,7 +60,6 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 					NetDeviceContainer newDevices;
 					newDevices.Add (pointToPoint.Install (m_nodes.at(node.first).Get(0),m_nodes.at (*it).Get (0)));
 					m_devices.push_back (newDevices);
-					NS_LOG_INFO("\nDevice " << m_totalNoLinks << " has: " << newDevices.Get(0) << " and " << newDevices.Get(1));
 				}
 			}
 		}
@@ -118,15 +114,6 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 			ip.NewNetwork ();
 			m_interfaces.push_back (newInterfaces);
 		}
-		for(auto &node : m_nodesConnectionsIps)
-		{
-			for(std::vector<Ipv4Address>::const_iterator it = node.second.begin(); it != node.second.end(); it++)
-    		{
-				NS_LOG_INFO("\nNode " << node.first << " has connection ip: " << *it);
-			}
-		}
-
-		NS_LOG_INFO("\nThe total connection ips for node 0: " << m_nodesConnectionsIps[0].size());
 
 	}
 

@@ -9,6 +9,7 @@
 #include "../../rapidjson/writer.h"
 #include "../../rapidjson/stringbuffer.h"
 #include "transaction.h"
+#include "common.h"
 
 #ifndef RSU_NODE_H
 #define RSU_NODE_H
@@ -33,6 +34,8 @@ class RsuNode : public Application{
         std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;
         std::map<Address, std::string> m_bufferedData;
         std::vector<Transaction> m_transaction;
+
+        const int m_blockchainPort;
 
         static TypeId GetTypeId (void);
         RsuNode (void);
@@ -64,23 +67,23 @@ class RsuNode : public Application{
 
         void CreateTransaction(double payment, int winnerId);
 
-        // /**
-        //  * \brief Sends a message to a peer
-        //  * \param receivedMessage the type of the received message
-        //  * \param responseMessage the type of the response message
-        //  * \param d the rapidjson document containing the info of the outgoing message
-        //  * \param outgoingSocket the socket of the peer
-        //  */
-        // void SendMessage(Transaction transaction, rapidjson::Document &d, Ptr<Socket> outgoingSocket);
+        /**
+         * \brief Sends a message to a peer
+         * \param receivedMessage the type of the received message
+         * \param responseMessage the type of the response message
+         * \param d the rapidjson document containing the info of the outgoing message
+         * \param outgoingSocket the socket of the peer
+         */
+        void SendMessage(enum Messages receivedMessage, enum Messages responseMessage, rapidjson::Document &d, Ptr<Socket> outgoingSocket);
         
-        // /**
-        //  * \brief Sends a message to a peer
-        //  * \param receivedMessage the type of the received message
-        //  * \param responseMessage the type of the response message
-        //  * \param d the rapidjson document containing the info of the outgoing message
-        //  * \param outgoingAddress the Address of the peer
-        //  */
-        // void SendMessage(Transaction transaction, rapidjson::Document &d, Address &outgoingAddress);
+        /**
+         * \brief Sends a message to a peer
+         * \param receivedMessage the type of the received message
+         * \param responseMessage the type of the response message
+         * \param d the rapidjson document containing the info of the outgoing message
+         * \param outgoingAddress the Address of the peer
+         */
+        void SendMessage(enum Messages receivedMessage, enum Messages responseMessage, rapidjson::Document &d, Address &outgoingAddress);
 
   
   // /**
