@@ -19,7 +19,11 @@ cd ns-3-allinone
 ./download.py -n ns-3.36
 ```
 
-## 3. Build
+## 3. Download rapidjson
+Download from [rapidjson](https://github.com/Tencent/rapidjson/tree/master/include/rapidjson).
+Copy the folder `${rapidjson}` under folder `${ns-3.36}`.
+
+## 4. Build
 
 ```sh
 ./ns3 configure --enable-examples --enable-tests --enable-python-bindings
@@ -31,7 +35,7 @@ cd ns-3-allinone
 | ------ | ------ |
 | ./ns3 run --no-build examples/wireless/mixed-wired-wireless.py | Run without build |
 | export 'NS_LOG=Blockchain=info:RsuNode=info:TopologyHelper=info' | Enable log infor|
-| ./ns3 run --no-build "scratch/blockchain/main.cc --PrintHelp" | Print comand arguments |
+| ./ns3 run "scratch/blockchain/main.cc --PrintHelp" | Print comand arguments |
 
 ## 4. Install VSC
 
