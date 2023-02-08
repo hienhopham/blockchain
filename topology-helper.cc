@@ -140,7 +140,7 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 	{
 		if (id > m_nodes.size () - 1 ) 
 		{
-			NS_FATAL_ERROR ("Index out of bounds in BlockchainTopologyHelper::GetNode.");
+			NS_FATAL_ERROR ("Index out of bounds in TopologyHelper::GetNode.");
 		}
 
 		return (m_nodes.at (id)).Get (0);
