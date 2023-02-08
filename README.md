@@ -21,7 +21,7 @@ cd ns-3-allinone
 
 ## 3. Download rapidjson
 Download from [rapidjson](https://github.com/Tencent/rapidjson/tree/master/include/rapidjson).
-Copy the folder `${rapidjson}` under folder `${ns-3.36}`.
+Copy the folder `rapidjson` under folder `ns-3.36`.
 
 ## 4. Build
 
@@ -40,5 +40,5 @@ Copy the folder `${rapidjson}` under folder `${ns-3.36}`.
 ## 5. Install VSC
 
 ## 6. Install C/C++ plugin
-Go to **c_cpp_properties.json** file, add build path (absolute) to the "includePath" configuration. For ex: "/home/hienpham/repos/ns-3-allinone/ns-3.36/build/include/"
+Go to `c_cpp_properties.json` file, add build path (absolute) to the **includePath** configuration. For ex: `"/home/hienpham/repos/ns-3-allinone/ns-3.36/build/include/"`
 
