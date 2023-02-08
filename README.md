@@ -37,8 +37,8 @@ Copy the folder `${rapidjson}` under folder `${ns-3.36}`.
 | export 'NS_LOG=Blockchain=info:RsuNode=info:TopologyHelper=info' | Enable log infor|
 | ./ns3 run "scratch/blockchain/main.cc --PrintHelp" | Print comand arguments |
 
-## 4. Install VSC
+## 5. Install VSC
 
-## 5. Install C/C++ plugin
+## 6. Install C/C++ plugin
 Go to **c_cpp_properties.json** file, add build path (absolute) to the "includePath" configuration. For ex: "/home/hienpham/repos/ns-3-allinone/ns-3.36/build/include/"
 
