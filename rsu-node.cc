@@ -56,13 +56,6 @@ namespace ns3 {
         NS_LOG_FUNCTION (this);
     }
 
-    int
-    RsuNode::GetNodeId (void) const
-    {
-        NS_LOG_FUNCTION (this);
-        return m_nodeId;
-    }
-
     Address
     RsuNode::GetNodeIp (void) const
     {

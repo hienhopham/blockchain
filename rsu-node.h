@@ -23,7 +23,6 @@ class Packet;
 class RsuNode : public Application{
     public:
 
-        int m_nodeId;
         Address m_nodeIp;
         Ptr<Node> m_node;
         Ptr<Socket> m_listenSocket;
@@ -42,8 +41,6 @@ class RsuNode : public Application{
         RsuNode (int nodeId);
 
         virtual ~RsuNode (void);
-
-        int GetNodeId (void) const;
 
         Address GetNodeIp(void) const;
 
@@ -84,16 +81,6 @@ class RsuNode : public Application{
          * \param outgoingAddress the Address of the peer
          */
         void SendMessage(enum Messages receivedMessage, enum Messages responseMessage, rapidjson::Document &d, Address &outgoingAddress);
-
-  
-  // /**
-  //  * \brief Sends a message to a peer
-  //  * \param receivedMessage the type of the received message
-  //  * \param responseMessage the type of the response message
-  //  * \param packet a string containing the info of the outgoing message
-  //  * \param outgoingAddress the Address of the peer
-  //  */
-  // void SendMessage(enum Messages receivedMessage,  enum Messages responseMessage, std::string packet, Address &outgoingAddress);
 };
 
 }
