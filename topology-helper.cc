@@ -19,19 +19,14 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("TopologyHelper");
 
-TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_numberOfRsu(numberOfRsu), m_numberOfIov (numberOfIov), m_totalNoLinks (0)
+TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t cloudServerId): m_numberOfRsu(numberOfRsu), m_cloudServerId (cloudServerId), m_totalNoLinks (0)
 	{
-	
-		std::vector<uint32_t> rsuNodes;    //nodes contain the ids of the nodes
 
-		for (uint32_t i = 0; i < m_numberOfRsu; i++)
-		{
-			rsuNodes.push_back(i);
-		}
+		uint32_t totalNodes = m_numberOfRsu + 1; //include all rsu nodes and one cloud server node
 
-		for(uint32_t i = 0; i < m_numberOfRsu; i++)
+		for(uint32_t i = 0; i < totalNodes; i++)
 		{
-			for(uint32_t j = 0; j < m_numberOfRsu; j++)
+			for(uint32_t j = 0; j < totalNodes; j++)
 			{
 				if (j != i)
 				{
@@ -44,7 +39,7 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 		pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
   		pointToPoint.SetChannelAttribute("Delay", StringValue("2ms"));
 
-		for (uint32_t i = 0; i < m_numberOfRsu; i++)
+		for (uint32_t i = 0; i < totalNodes; i++)
 		{
 			NodeContainer currentNode;
 			currentNode.Create(1);
@@ -107,10 +102,18 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 			auto interfaceAddress2 = newInterfaces.GetAddress (1);
 			uint32_t node1 = (currentContainer.Get (0))->GetNode()->GetId();
 			uint32_t node2 = (currentContainer.Get (1))->GetNode()->GetId();
-						
-			m_nodesConnectionsIps[node1].push_back(interfaceAddress2);
-			m_nodesConnectionsIps[node2].push_back(interfaceAddress1);
 
+			if (node1 == m_cloudServerId){
+				m_nodeToPeerConnectionsIps[node1].push_back(interfaceAddress2);
+				m_nodeToCloudServerConnectionsIp[node2] = interfaceAddress1;
+			} else if (node2 == m_cloudServerId) {
+				m_nodeToPeerConnectionsIps[node2].push_back(interfaceAddress1);
+				m_nodeToCloudServerConnectionsIp[node1] = interfaceAddress2;
+			} else {
+				m_nodeToPeerConnectionsIps[node1].push_back(interfaceAddress2);
+				m_nodeToPeerConnectionsIps[node2].push_back(interfaceAddress1);
+			}
+						 
 			ip.NewNetwork ();
 			m_interfaces.push_back (newInterfaces);
 		}
@@ -130,9 +133,15 @@ TopologyHelper::TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov): m_n
 
 
 	std::map<uint32_t, std::vector<Ipv4Address>> 
-	TopologyHelper::GetNodesConnectionsIps (void) const
+	TopologyHelper::GetNodeToPeerConnectionsIps (void) const
 	{
-		return m_nodesConnectionsIps;
+		return m_nodeToPeerConnectionsIps;
+	}
+
+		std::map<uint32_t, Ipv4Address>
+	TopologyHelper::GetNodeToCloudServerConnectionsIp (void) const
+	{
+		return m_nodeToCloudServerConnectionsIp;
 	}
 
 	Ptr<Node> 

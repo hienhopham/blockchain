@@ -8,8 +8,8 @@
 #include "../../rapidjson/document.h"
 #include "../../rapidjson/writer.h"
 #include "../../rapidjson/stringbuffer.h"
-#include "transaction.h"
 #include "common.h"
+#include "transaction.h"
 
 #ifndef RSU_NODE_H
 #define RSU_NODE_H
@@ -22,19 +22,6 @@ class Packet;
 
 class RsuNode : public Application{
     public:
-
-        Address m_nodeIp;
-        Ptr<Node> m_node;
-        Ptr<Socket> m_listenSocket;
-        int m_numberOfPeers;
-        int m_transactionId;
-
-        std::vector<Ipv4Address> m_peersAddresses;
-        std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;
-        std::map<Address, std::string> m_bufferedData;
-        std::vector<Transaction> m_transaction;
-
-        const int m_blockchainPort;
 
         static TypeId GetTypeId (void);
         RsuNode (void);
@@ -50,11 +37,16 @@ class RsuNode : public Application{
 
         void SetPeersAddresses (const std::vector<Ipv4Address> &peers);
 
+        void SetCloudServerAddress (const Ipv4Address &cloudServerAddr);
+        
+
+    protected:
+
         virtual void StartApplication (void);    // Called at time specified by Start
 
         virtual void StopApplication (void); 
 
-        void HandleRead (Ptr<Socket> socket);
+        virtual void HandleRead (Ptr<Socket> socket);
 
         void HandleAccept (Ptr<Socket> socket, const Address& from);
 
@@ -81,6 +73,20 @@ class RsuNode : public Application{
          * \param outgoingAddress the Address of the peer
          */
         void SendMessage(enum Messages receivedMessage, enum Messages responseMessage, rapidjson::Document &d, Address &outgoingAddress);
+
+        Address m_nodeIp;
+        Ptr<Node> m_node;
+        Ptr<Socket> m_listenSocket;
+        Ptr<Socket> m_cloudServerSocket;
+        Ipv4Address m_cloudServerAddr;
+        int m_numberOfPeers;
+        int m_transactionId;
+
+        std::vector<Ipv4Address> m_peersAddresses;
+        std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;
+        std::map<Address, std::string> m_bufferedData;
+        std::vector<Transaction> m_transaction;
+        const int m_blockchainPort;
 };
 
 }

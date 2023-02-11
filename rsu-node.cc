@@ -47,6 +47,7 @@ namespace ns3 {
     {
         NS_LOG_FUNCTION(this);
         m_listenSocket = 0;
+        m_cloudServerSocket = 0;
         m_numberOfPeers = m_peersAddresses.size();
         m_transactionId = 1;
     }
@@ -88,6 +89,13 @@ namespace ns3 {
     }
 
     void
+    RsuNode::SetCloudServerAddress (const Ipv4Address &cloudServerAddr)
+    {
+        NS_LOG_FUNCTION (this);
+        m_cloudServerAddr = cloudServerAddr;
+    }
+
+    void
     RsuNode::StartApplication ()    // Called at time specified by Start
     {
         NS_LOG_FUNCTION (this);
@@ -121,9 +129,11 @@ namespace ns3 {
             m_peersSockets[*i]->Connect (InetSocketAddress (*i, m_blockchainPort));
         }
 
-        if (GetNode()->GetId() == 1) {
-            CreateTransaction(0,1);
-        }
+        //Set up the sending socket for cloud server
+        m_cloudServerSocket = Socket::CreateSocket (GetNode (), TcpSocketFactory::GetTypeId ());
+        m_cloudServerSocket->Connect (InetSocketAddress (m_cloudServerAddr, m_blockchainPort));
+
+        CreateTransaction(0,GetNode ()->GetId());
     }
 
     void
@@ -140,6 +150,12 @@ namespace ns3 {
         {
             m_listenSocket->Close ();
             m_listenSocket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
+        }
+
+        if (m_cloudServerSocket)
+        {
+            m_cloudServerSocket->Close ();
+            m_cloudServerSocket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
         }
 
     }
@@ -210,6 +226,8 @@ namespace ns3 {
                         if (requestTransFrom == GetNode()->GetId()) {
                              // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
                             std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
+
+                            SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
                         }
                     }
                 }

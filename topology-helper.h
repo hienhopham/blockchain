@@ -18,7 +18,7 @@ namespace ns3 {
         public: 
 
 
-        TopologyHelper (uint32_t numberOfRsu, uint32_t numberOfIov);
+        TopologyHelper (uint32_t numberOfRsu, uint32_t m_cloudServerId);
 
         ~TopologyHelper ();
 
@@ -27,15 +27,17 @@ namespace ns3 {
         void InstallStack (InternetStackHelper stack);
         void AssignIpv4Addresses (Ipv4AddressHelperCustom ip);
         Ipv4InterfaceContainer GetIpv4InterfaceContainer (void) const;
-        std::map<uint32_t, std::vector<Ipv4Address>> GetNodesConnectionsIps (void) const;
+        std::map<uint32_t, std::vector<Ipv4Address>> GetNodeToPeerConnectionsIps (void) const;
+        std::map<uint32_t, Ipv4Address> GetNodeToCloudServerConnectionsIp (void) const;
 
 
         uint32_t     m_numberOfRsu;                  //!< The total number of nodes
-        uint32_t     m_numberOfIov;                      //!< The total number of miners
+        uint32_t     m_cloudServerId;
         uint32_t     m_totalNoLinks; 
         std::vector<Ipv4InterfaceContainer>             m_interfaces;  
         std::map<uint32_t, std::vector<uint32_t>>       m_nodesConnections;        //!< key = nodeId
-        std::map<uint32_t, std::vector<Ipv4Address>>    m_nodesConnectionsIps;     //!< key = nodeId
+        std::map<uint32_t, std::vector<Ipv4Address>>    m_nodeToPeerConnectionsIps;     //!< key = nodeId
+        std::map<uint32_t, Ipv4Address>   m_nodeToCloudServerConnectionsIp;     //!< key = nodeId
         std::vector<NodeContainer>                      m_nodes;                   //!< all the nodes in the network
         std::vector<NetDeviceContainer>                 m_devices;                 //!< NetDevices in the network
 
