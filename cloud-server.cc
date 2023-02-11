@@ -150,6 +150,8 @@ namespace ns3 {
                 {
                     case REQUEST_BLOCK:
                     {
+                        //TODO: verify signature, reorder here - Tuan
+                        //TODO: create new block, broadcast to others here - Phuong
                         std::cout<<"Node " << GetNode()->GetId() << " receives REQUEST_BLOCK \n";
                     }
             
