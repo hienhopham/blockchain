@@ -81,6 +81,7 @@ class RsuNode : public Application{
         Ipv4Address m_cloudServerAddr;
         int m_numberOfPeers;
         int m_transactionId;
+        int m_responseCount; // Count the number of valid responses from peers
 
         std::vector<Ipv4Address> m_peersAddresses;
         std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;

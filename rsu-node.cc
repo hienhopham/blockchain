@@ -50,6 +50,7 @@ namespace ns3 {
         m_cloudServerSocket = 0;
         m_numberOfPeers = m_peersAddresses.size();
         m_transactionId = 1;
+        m_responseCount = 0;
     }
 
     RsuNode::~RsuNode(void)
@@ -226,8 +227,23 @@ namespace ns3 {
                         if (requestTransFrom == GetNode()->GetId()) {
                              // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
                             std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
-
-                            SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
+                             // // If the response is valid, then count up the "m_responseCount"
+                            m_responseCount++;
+                            std::cout<<"Current Number of Response: " << m_responseCount << "\n";
+                            
+                             // If the number of valid responses equals to number of peers, then the transaction is valid. 
+                            if (m_responseCount == m_numberOfPeers){
+                                
+                                std::cout<< "Sending the  Valid Transaction of " << GetNode()->GetId() <<  " to  Cloud Server\n";
+                                SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
+                                m_responseCount = 0;
+                            }
+                        }
+                        else{
+                            std::cout<<"NOT VALID RESPONSE \n";
+                            std::cout<<"Current Number of Response: " << m_responseCount << "\n";
+                        }
+                            
                         }
                     }
                 }
