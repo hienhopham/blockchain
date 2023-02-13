@@ -15,7 +15,6 @@
 #include "ns3/uinteger.h"
 #include "ns3/double.h"
 #include "rsu-node.h"
-// #include "transaction.h"
 #include "blockchain.h"
 #include <fstream>
 
@@ -42,14 +41,23 @@ namespace ns3 {
         return tid;
     }
 
-    RsuNode::RsuNode(void) : m_blockchainPort(8333)
-
+    RsuNode::RsuNode(void) : m_blockchainPort(8333), m_headersSizeBytes(81), m_averageTransacionSize(522.4),
+                                            m_countBytes(4), m_blockchainMessageHeader(90), m_inventorySizeBytes(36)
     {
         NS_LOG_FUNCTION(this);
         m_listenSocket = 0;
         m_cloudServerSocket = 0;
         m_numberOfPeers = m_peersAddresses.size();
         m_transactionId = 1;
+        m_meanOrderingTime = 0;
+        m_meanBlockReceiveTime = 0;
+        m_previousBlockReceiveTime = 0;
+        m_meanBlockPropagationTime = 0;
+        m_meanOrderingTime = 0;
+        m_meanBlockSize = 0;
+        m_numberOfPeers = m_peersAddresses.size();
+        m_transactionId = 1;
+        m_totalOrdering = 0;
     }
 
     RsuNode::~RsuNode(void)
@@ -93,6 +101,13 @@ namespace ns3 {
     {
         NS_LOG_FUNCTION (this);
         m_cloudServerAddr = cloudServerAddr;
+    }
+
+    void
+    RsuNode::SetProtocolType(enum ProtocolType protocolType)
+    {
+        NS_LOG_FUNCTION(this);
+        m_protocolType = protocolType;
     }
 
     void
@@ -302,7 +317,7 @@ namespace ns3 {
         rapidjson::StringBuffer transactionInfo;
         rapidjson::Writer<rapidjson::StringBuffer> tranWriter(transactionInfo);
         transD.Accept(tranWriter);
-
+        // send to peers 
         for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
         {
             const uint8_t delimiter[] = "#";

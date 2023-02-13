@@ -19,7 +19,11 @@
 #include "blockchain.h"
 #include "rsu-node.h"
 #include <fstream>
+#include <random>
+#include <time.h>
+#include <sys/time.h>
 
+static double GetWallTime();
 namespace ns3 {
 
     NS_LOG_COMPONENT_DEFINE("CloudServer");
@@ -42,10 +46,40 @@ namespace ns3 {
     }
 
 
-    CloudServer::CloudServer(void): RsuNode()
+    CloudServer::CloudServer(void): RsuNode(),  m_timeStart(0), m_fistToMine(false)
 
     {
         NS_LOG_FUNCTION(this);
+        m_minerAverageBlockGenInterval = 0;
+        m_previousBlockGenerationTime = 0;
+        m_meanNumberofTransactions = 0;
+        m_minerGeneratedBlocks = 0;
+        // HARDCODE
+        m_fixedBlockTimeGeneration = 15;
+        long blockSize = -1;
+
+        std::random_device rd;
+        m_generator.seed(rd());
+
+        if(m_fixedBlockTimeGeneration > 0)
+        {
+            m_nextBlockTime = m_fixedBlockTimeGeneration;
+        }
+        else
+        {
+            m_nextBlockTime = 0;
+        }
+
+        if(m_fixedBlockSize > 0)
+        {
+            m_nextBlockSize = m_fixedBlockSize;
+        }
+        else
+        {
+            m_nextBlockSize = 0;
+        }
+
+
     }
 
     CloudServer::~CloudServer(void)
@@ -168,140 +202,177 @@ namespace ns3 {
         }
         
     }
-    // void
-    // CloudServer::MineBlock(void)
-    // {   
-    //     NS_LOG_FUNCTION(this);
-    //     //std::cout<< "Start MineBlock function\n";
-    //     rapidjson::Document inv;
-    //     rapidjson::Document block;
 
-    //     std::vector<Transaction>::iterator      trans_it;
-    //     int height = m_blockchain.GetCurrentTopBlock()->GetBlockHeight() + 1;
-    //     int minerId = GetNode()->GetId();
-    //     int nonce = 0;
-    //     int parentBlockMinerId = m_blockchain.GetCurrentTopBlock()->GetMinerId();
-    //     double currentTime = Simulator::Now().GetSeconds();
-    //     std::ostringstream stringStream;
-    //     std::string blockHash;
+    void
+    CloudServer::ScheduleNextMiningEvent(void)
+    {
+        NS_LOG_FUNCTION(this);
+        //std::cout<< "Schedule Mine application\n";
 
-    //     stringStream << height << "/" << minerId;
-    //     blockHash = stringStream.str();
+        if(m_fixedBlockTimeGeneration > 0)
+        {
+            m_nextBlockTime = m_fixedBlockTimeGeneration;
+            m_nextMiningEvent = Simulator::Schedule(Seconds(m_fixedBlockTimeGeneration), &CloudServer::MineBlock, this);
+            //std::cout<<"m_nextBlockTime(1) : " << m_nextBlockTime <<"\n";
+        }
+        else
+        {
+            /*
+            m_nextBlockTime = m_blockGenTimeDistribution(m_generator)*m_blockGenBinSize*60
+                                *(m_averageBlockGenIntervalSeconds/m_realAverageBlockGenIntervalSeconds)/m_hashRate;
+            //std::cout<< "m_blockGenTimeDistribution(m_generator) : "<<m_blockGenTimeDistribution(m_generator)<<"\n";
+            //std::cout<<"m_nextBlockTime(2) : " << m_nextBlockTime <<"\n";
+            m_nextMiningEvent = Simulator::Schedule(Seconds(m_nextBlockTime), &BlockchainMiner::MineBlock, this);
+            */
+            m_nextBlockTime = 2;
+            m_nextMiningEvent = Simulator::Schedule(Seconds(m_nextBlockTime), &CloudServer::MineBlock, this);
+        }
+    }
 
-    //     inv.SetObject();
-    //     block.SetObject();
+    void
+    CloudServer::MineBlock(void)
+    {   
+        NS_LOG_FUNCTION(this);
+        //std::cout<< "Start MineBlock function\n";
+        rapidjson::Document inv;
+        rapidjson::Document block;
 
-    //     if(height == 1)
-    //     {
-    //         m_fistToMine = true;
-    //         m_timeStart = GetWallTime();
-    //     }
+        std::vector<Transaction>::iterator      trans_it;
+        int height = m_blockchain.GetCurrentTopBlock()->GetBlockHeight() + 1;
+        int minerId = GetNode()->GetId();
+        int nonce = 0;
+        int parentBlockMinerId = m_blockchain.GetCurrentTopBlock()->GetMinerId();
+        double currentTime = Simulator::Now().GetSeconds();
+        std::ostringstream stringStream;
+        std::string blockHash;
 
-    //     if(m_fixedBlockSize > 0)
-    //     {
-    //         m_nextBlockSize = m_fixedBlockSize;
+        stringStream << height << "/" << minerId;
+        blockHash = stringStream.str();
+
+        inv.SetObject();
+        block.SetObject();
+
+        if(height == 1)
+        {
+            m_fistToMine = true;
+            m_timeStart = GetWallTime();
+        }
+
+        if(m_fixedBlockSize > 0)
+        {
+            m_nextBlockSize = m_fixedBlockSize;
             
-    //     }
-    //     else
-    //     {
-    //         std::normal_distribution<double> dist(23.0, 2.0);
-    //         //m_nextBlockSize = dist(m_generator);
-    //         m_nextBlockSize = (int)(dist(m_generator)*1000);
-    //         //std::cout <<(int)(dist(m_generator)*1000) <<"\n";
-    //     }
+        }
+        else
+        {
+            std::normal_distribution<double> dist(23.0, 2.0);
+            //m_nextBlockSize = dist(m_generator);
+            m_nextBlockSize = (int)(dist(m_generator)*1000);
+            //std::cout <<(int)(dist(m_generator)*1000) <<"\n";
+        }
 
-    //     if(m_nextBlockSize < m_averageTransacionSize)
-    //     {
-    //         m_nextBlockSize = m_averageTransacionSize + m_headersSizeBytes;
-    //     }
+        if(m_nextBlockSize < m_averageTransacionSize)
+        {
+            m_nextBlockSize = m_averageTransacionSize + m_headersSizeBytes;
+        }
 
-    //     Block newBlock(height, minerId, nonce, parentBlockMinerId, m_nextBlockSize,
-    //                     currentTime, currentTime, Ipv4Address("127.0.0.1"));
+        Block newBlock(height, minerId, nonce, parentBlockMinerId, m_nextBlockSize,
+                        currentTime, currentTime, Ipv4Address("127.0.0.1"));
         
-    //     /*
-    //      * Push transactions to new Blocks
-    //      */
+        /*
+         * Push transactions to new Blocks
+         */
         
-    //     for(trans_it = m_notValidatedTransaction.begin(); trans_it < m_notValidatedTransaction.end(); trans_it++)
-    //     {
-    //         trans_it->SetValidation();
-    //         m_totalOrdering++;
-    //         m_meanOrderingTime = (m_meanOrderingTime*static_cast<double>(m_totalOrdering-1) + (Simulator::Now().GetSeconds() - trans_it->GetTransTimeStamp()))/static_cast<double>(m_totalOrdering);
+        for(trans_it = m_notValidatedTransaction.begin(); trans_it < m_notValidatedTransaction.end(); trans_it++)
+        {
+            trans_it->SetValidation();
+            m_totalOrdering++;
+            m_meanOrderingTime = (m_meanOrderingTime*static_cast<double>(m_totalOrdering-1) + (Simulator::Now().GetSeconds() - trans_it->GetTransTimeStamp()))/static_cast<double>(m_totalOrdering);
 
-    //     }
-    //     //std::cout<<m_notValidatedTransaction.size()<<"\n";
-    //     m_meanNumberofTransactions = (m_meanNumberofTransactions*static_cast<double>(m_minerGeneratedBlocks) + m_notValidatedTransaction.size())/static_cast<double>(m_minerGeneratedBlocks+1);
-    //     newBlock.SetTransactions(m_notValidatedTransaction);
-    //     m_notValidatedTransaction.clear();
+        }
+        //std::cout<<m_notValidatedTransaction.size()<<"\n";
+        m_meanNumberofTransactions = (m_meanNumberofTransactions*static_cast<double>(m_minerGeneratedBlocks) + m_notValidatedTransaction.size())/static_cast<double>(m_minerGeneratedBlocks+1);
+        newBlock.SetTransactions(m_notValidatedTransaction);
+        m_notValidatedTransaction.clear();
 
-    //     //newBlock.PrintAllTransaction();
+        //newBlock.PrintAllTransaction();
         
-    //     rapidjson::Value value;
-    //     rapidjson::Value array(rapidjson::kArrayType);
-    //     //rapidjson::Value blockInfor(rapidjson::kObjectType);
+        rapidjson::Value value;
+        rapidjson::Value array(rapidjson::kArrayType);
+        //rapidjson::Value blockInfor(rapidjson::kObjectType);
 
-    //     value.SetString("block");
-    //     inv.AddMember("type", value, inv.GetAllocator());
+        value.SetString("block");
+        inv.AddMember("type", value, inv.GetAllocator());
 
-    //     if(m_protocolType == STANDARD_PROTOCOL)
-    //     {
-    //         value = INV;
-    //         inv.AddMember("message", value, inv.GetAllocator());
+        // if(m_protocolType == STANDARD_PROTOCOL)
+        // {
+        //     // value = INV;
+        //     inv.AddMember("message", value, inv.GetAllocator());
 
-    //         value.SetString(blockHash.c_str(), blockHash.size(), inv.GetAllocator());
-    //         array.PushBack(value, inv.GetAllocator());
-    //         inv.AddMember("inv", array, inv.GetAllocator());
-    //     }
+        //     value.SetString(blockHash.c_str(), blockHash.size(), inv.GetAllocator());
+        //     array.PushBack(value, inv.GetAllocator());
+        //     inv.AddMember("inv", array, inv.GetAllocator());
+        // }
 
-    //     m_meanBlockReceiveTime = (m_blockchain.GetTotalBlocks() - 1)/static_cast<double>(m_blockchain.GetTotalBlocks())*m_meanBlockReceiveTime
-    //                             + (currentTime - m_previousBlockReceiveTime)/(m_blockchain.GetTotalBlocks());
-    //     m_previousBlockReceiveTime = currentTime;
+        m_meanBlockReceiveTime = (m_blockchain.GetTotalBlocks() - 1)/static_cast<double>(m_blockchain.GetTotalBlocks())*m_meanBlockReceiveTime
+                                + (currentTime - m_previousBlockReceiveTime)/(m_blockchain.GetTotalBlocks());
+        m_previousBlockReceiveTime = currentTime;
 
-    //     m_meanBlockPropagationTime = (m_blockchain.GetTotalBlocks() - 1)/static_cast<double>(m_blockchain.GetTotalBlocks())*m_meanBlockPropagationTime;
+        m_meanBlockPropagationTime = (m_blockchain.GetTotalBlocks() - 1)/static_cast<double>(m_blockchain.GetTotalBlocks())*m_meanBlockPropagationTime;
 
-    //     m_meanBlockSize = (m_blockchain.GetTotalBlocks() - 1)/static_cast<double>(m_blockchain.GetTotalBlocks())*m_meanBlockSize     
-    //                         + (m_nextBlockSize)/static_cast<double>(m_blockchain.GetTotalBlocks());
+        m_meanBlockSize = (m_blockchain.GetTotalBlocks() - 1)/static_cast<double>(m_blockchain.GetTotalBlocks())*m_meanBlockSize     
+                            + (m_nextBlockSize)/static_cast<double>(m_blockchain.GetTotalBlocks());
         
-    //     m_blockchain.AddBlock(newBlock);
+        m_blockchain.AddBlock(newBlock);
 
-    //     rapidjson::StringBuffer invInfo;
-    //     rapidjson::Writer<rapidjson::StringBuffer> invWriter(invInfo);
-    //     inv.Accept(invWriter);
+        rapidjson::StringBuffer invInfo;
+        rapidjson::Writer<rapidjson::StringBuffer> invWriter(invInfo);
+        inv.Accept(invWriter);
 
-    //     rapidjson::StringBuffer blockInfo;
-    //     rapidjson::Writer<rapidjson::StringBuffer> blockWriter(blockInfo);
-    //     block.Accept(blockWriter);
+        rapidjson::StringBuffer blockInfo;
+        rapidjson::Writer<rapidjson::StringBuffer> blockWriter(blockInfo);
+        block.Accept(blockWriter);
 
-    //     //std::cout<< "MineBlock function : Add a new block in packet\n";
+        //std::cout<< "MineBlock function : Add a new block in packet\n";
 
-    //     for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
-    //     {
+        for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
+        {
             
-    //         const uint8_t delimiter[] = "#";
+            const uint8_t delimiter[] = "#";
 
-    //         m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(invInfo.GetString()), invInfo.GetSize(), 0);
-    //         m_peersSockets[*i]->Send(delimiter, 1, 0);
+            m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(invInfo.GetString()), invInfo.GetSize(), 0);
+            m_peersSockets[*i]->Send(delimiter, 1, 0);
             
-    //         m_nodeStats->invSentBytes += m_blockchainMessageHeader + m_countBytes + inv["inv"].Size()*m_inventorySizeBytes;
-    //         //std::cout<< "Node : " << GetNode()->GetId() <<" complete minning and send packet to " << *i << " \n" ;
-    //         NS_LOG_INFO("At time " << Simulator::Now().GetSeconds()
-    //                     << " s blockchain miner " << GetNode()->GetId()
-    //                     << " sent a packet " << invInfo.GetString()
-    //                     << " to " << *i);
+            m_nodeStats->invSentBytes += m_blockchainMessageHeader + m_countBytes + inv["inv"].Size()*m_inventorySizeBytes;
+            //std::cout<< "Node : " << GetNode()->GetId() <<" complete minning and send packet to " << *i << " \n" ;
+            NS_LOG_INFO("At time " << Simulator::Now().GetSeconds()
+                        << " s blockchain miner " << GetNode()->GetId()
+                        << " sent a packet " << invInfo.GetString()
+                        << " to " << *i);
             
 
-    //     }
+        }
         
-    //     m_minerAverageBlockGenInterval = m_minerGeneratedBlocks/static_cast<double>(m_minerGeneratedBlocks+1)*m_minerAverageBlockGenInterval
-    //                                     + (Simulator::Now().GetSeconds() - m_previousBlockGenerationTime)/(m_minerGeneratedBlocks+1);
+        m_minerAverageBlockGenInterval = m_minerGeneratedBlocks/static_cast<double>(m_minerGeneratedBlocks+1)*m_minerAverageBlockGenInterval
+                                        + (Simulator::Now().GetSeconds() - m_previousBlockGenerationTime)/(m_minerGeneratedBlocks+1);
 
-    //     m_minerAverageBlockSize = m_minerGeneratedBlocks/static_cast<double>(m_minerGeneratedBlocks+1)*m_minerAverageBlockSize
-    //                             + static_cast<double>(m_nextBlockSize)/(m_minerGeneratedBlocks+1);
-    //     m_previousBlockGenerationTime = Simulator::Now().GetSeconds();
-    //     m_minerGeneratedBlocks++;
+        m_minerAverageBlockSize = m_minerGeneratedBlocks/static_cast<double>(m_minerGeneratedBlocks+1)*m_minerAverageBlockSize
+                                + static_cast<double>(m_nextBlockSize)/(m_minerGeneratedBlocks+1);
+        m_previousBlockGenerationTime = Simulator::Now().GetSeconds();
+        m_minerGeneratedBlocks++;
 
-    //     ScheduleNextMiningEvent();
-    //     //std::cout<< "MineBlock function : finish MinBLock\n";
+        ScheduleNextMiningEvent();
+        //std::cout<< "MineBlock function : finish MinBLock\n";
 
-    // }
+    }
+}
+
+static double GetWallTime()
+{
+    struct timeval time;
+    if(gettimeofday(&time, NULL))
+    {
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
