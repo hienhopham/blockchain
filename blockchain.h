@@ -154,7 +154,6 @@ namespace ns3 {
 
     class Block
     {
-        
         public:
             Block(int blockHeight, int minerId, int nonce, int parentBlockMinerId, int blockSizeBytes,
                 double timeStamp, double timeReceived, Ipv4Address receivedFromIpv4);
