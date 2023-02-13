@@ -6,22 +6,24 @@
 #include <algorithm>
 #include "ns3/address.h"
 #include "ipv4-address-helper-custom.h"
+#include "transaction.h"
+#include "common.h"
 
 namespace ns3 {
 
-    enum Messages
-    {
-        INV,            //0
-        REQUEST_TRANS,  //1
-        GET_HEADERS,    //2
-        HEADERS,        //3
-        GET_DATA,       //4
-        BLOCK,          //5    
-        NO_MESSAGE,     //6
-        REPLY_TRANS,    //7
-        MSG_TRANS,      //8
-        RESULT_TRANS,   //9
-    };
+    // enum Messages
+    // {
+    //     INV,            //0
+    //     REQUEST_TRANS,  //1
+    //     GET_HEADERS,    //2
+    //     HEADERS,        //3
+    //     GET_DATA,       //4
+    //     BLOCK,          //5    
+    //     NO_MESSAGE,     //6
+    //     REPLY_TRANS,    //7
+    //     MSG_TRANS,      //8
+    //     RESULT_TRANS,   //9
+    // };
 
     enum MinerType
     {
@@ -115,27 +117,27 @@ namespace ns3 {
     {
         public:
 
-            Transaction(int nodeId, int transId, double timeStamp);
+            Transaction(int rsuNodeId, int transId, double timeStamp, double payment, int winnerId);
             Transaction();
             virtual ~Transaction(void);
 
-            int GetTransNodeId(void) const;
-            void SetTransNodeId(int nodeId);
+            int GetRsuNodeId(void) const;
+            void SetRsuNodeId(int m_rsuNodeId);
 
             int GetTransId(void) const;
-            void SetTransId(int transId);
+            void SetTransId(int m_transId);
 
             int GetTransSizeByte(void) const;
-            void SetTransSizeByte(int transSizeByte);
+            void SetTransSizeByte(int m_transSizeByte);
 
             double GetTransTimeStamp(void) const;
-            void SetTransTimeStamp(double timeStamp);
+            void SetTransTimeStamp(double m_timeStamp);
 
-            bool IsValidated(void) const;
-            void SetValidation();
+            double GetPayment(void) const;
+            void SetPayment(double m_payment);
 
-            int GetExecution(void) const;
-            void SetExecution(int endoerserId);
+            int GetWinnerId(void) const;
+            void SetWinnerId(int m_winnerId);
 
             Transaction& operator = (const Transaction &tranSource);     //Assignment Constructor
 
@@ -143,12 +145,12 @@ namespace ns3 {
             
         
         protected:
-            int m_nodeId;
+            int m_rsuNodeId;
             int m_transId;
             int m_transSizeByte;
             double m_timeStamp;
-            bool m_validatation; 
-            int m_execution;
+            double m_payment; 
+            int m_winnerId;
 
     };
 
