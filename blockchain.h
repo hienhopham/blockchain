@@ -227,7 +227,65 @@ namespace ns3 {
             std::vector<Transaction> m_transactions;
     };
 
+    class Blockchain : public Block
+    {
+        public:
+            Blockchain(void);
+            virtual ~Blockchain(void);
 
+            int GetTotalBlocks(void) const;
+
+            int GetNoOrphans(void) const;
+
+            int GetBlockchainHeight(void) const;
+
+            /*
+             * Check if the block has been included in the blockchain.
+             */
+            bool HasBlock(const Block &newBlock) const;
+            bool HasBlock(int height, int minerId) const;
+            /*
+             * Retun to block with the specified height and minerID
+             * Should be called after HasBlock() to make sure that the block exists.
+             */
+            Block ReturnBlock(int height, int minerId);
+            
+            bool IsOrphan(const Block &newBlock) const;
+            bool IsOrphan(int height, int minerId) const;
+            
+            /*
+             * Gets a pointer to the block.
+             */
+            const Block* GetBlockPointer(const Block &newBlock) const;
+            
+            const std::vector<const Block *> GetChildrenPointers(const Block &block);
+
+            const std::vector<const Block *> GetOrpharnChildrenPointer(const Block &block);
+
+            const Block* GetParent(const Block &block);
+
+            const Block* GetCurrentTopBlock(void) const;
+
+            void AddBlock(const Block& newBlock);
+
+            void AddOrphan(const Block& newBlock);
+
+            void RemoveOrphan (const Block& newBlock);
+
+            //void PrintOrphans(void);
+
+            //void GetBlocksInForks(void);
+
+            //int GetLongestForkSize(void);
+
+            //friend std:: ostream& operator << (std:ostream &out, Blockchain &blockchain);
+
+        protected:
+        
+            int                             m_totalBlocks;
+            std::vector<std::vector<Block>> m_blocks;
+            std::vector<Block>              m_orphans;                 
+    };
 
 }
 
