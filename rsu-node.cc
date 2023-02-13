@@ -239,10 +239,7 @@ namespace ns3 {
                                 m_responseCount = 0;
                             }
                         }
-                        else{
-                            std::cout<<"NOT VALID RESPONSE \n";
-                            std::cout<<"Current Number of Response: " << m_responseCount << "\n";
-                        }
+
                             
                         }
                     }
