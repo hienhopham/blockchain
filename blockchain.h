@@ -152,7 +152,80 @@ namespace ns3 {
 
     };
 
+    class Block
+    {
+        
+        public:
+            Block(int blockHeight, int minerId, int nonce, int parentBlockMinerId, int blockSizeBytes,
+                double timeStamp, double timeReceived, Ipv4Address receivedFromIpv4);
+            Block();
+            Block(const Block &blockSource);
+            virtual ~Block(void);
 
+            int GetBlockHeight(void) const;
+            void SetBlockHeight(int blockHeight);
+
+            int GetNonce(void) const;
+            void SetNonce(int nonce);
+
+            int GetMinerId(void) const;
+            void SetMinerId(int minerId);
+
+            int GetParentBlockMinerId(void) const;
+            void SetParentBlockMinerId(int parentBlockMinerId);
+
+            int GetBlockSizeBytes(void) const;
+            void SetBlockSizeBytes(int blockSizeBytes);
+
+            double GetTimeStamp(void) const;
+            void SetTimeStamp(double timeStamp);
+
+            double GetTimeReceived(void) const;
+            
+            Ipv4Address GetReceivedFromIpv4(void) const;
+            void SetReceivedFromIpv4(Ipv4Address receivedFromIpv4);
+
+            std::vector<Transaction> GetTransactions(void) const;
+            void SetTransactions(const std::vector<Transaction> &transactions);
+            /*
+            * Checks if the block provided as the argument is the parent of this block object
+            */
+            bool IsParent (const Block &block) const;
+
+           /*
+           * Checks if the block provided as the argument is the child of this block object
+           */
+            bool IsChild (const Block &block) const;
+
+            int GetTotalTransaction(void) const;
+
+            Transaction ReturnTransaction(int nodeId, int transId);
+
+            bool HasTransaction(Transaction &newTran) const;
+
+            bool HasTransaction(int nodeId, int tranId) const;
+            
+            void AddTransaction(const Transaction& newTrans);
+
+            void PrintAllTransaction(void);
+            
+            Block& operator = (const Block &blockSource);     //Assignment Constructor
+
+            friend bool operator == (const Block &block1, const Block &block2);
+            //friend std::ostream& operator<<(std::ostream &out, const Block &block);
+
+        protected:
+            int         m_blockHeight;                  //the height of the block
+            int         m_minerId;                      //the ID of the miner which mined this block
+            int         m_nonce;                        //the nonce of the block
+            int         m_parentBlockMinerId;           //the ID of the miner which mined the parent of this block
+            int         m_blockSizeBytes;               //the size of the block in bytes
+            int         m_totalTransactions;
+            double      m_timeStamp;                 //the time stamp that the block was created
+            double      m_timeReceived;              //the time that the block was received from the node
+            Ipv4Address m_receivedFromIpv4;       //the ipv4 of the node which sent the block to the receiving node
+            std::vector<Transaction> m_transactions;
+    };
 
 
 
