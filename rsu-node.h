@@ -9,7 +9,7 @@
 #include "../../rapidjson/writer.h"
 #include "../../rapidjson/stringbuffer.h"
 #include "common.h"
-#include "transaction.h"
+#include "blockchain.h"
 
 #ifndef RSU_NODE_H
 #define RSU_NODE_H

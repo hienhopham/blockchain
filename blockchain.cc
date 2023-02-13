@@ -14,19 +14,19 @@ namespace ns3{
      * 
      */
 
-    Transaction::Transaction(int nodeId, int transId, double timeStamp)
+    Transaction::Transaction(int rsuNodeId, int transId, double timeStamp, double payment, int winnerId)
     {
-        m_nodeId = nodeId;
+        m_rsuNodeId = rsuNodeId;
         m_transId = transId;
         m_transSizeByte = 100;
         m_timeStamp = timeStamp;
-        m_validatation = false;
-        m_execution = 0;
+        m_payment = payment;
+        m_winnerId = winnerId;
     }
     
     Transaction::Transaction()
     {
-        Transaction(0, 0, 0);
+        Transaction(0, 0, 0, 0, 0);
     }
     
     Transaction::~Transaction()
@@ -34,15 +34,15 @@ namespace ns3{
     }
 
     int
-    Transaction::GetTransNodeId(void) const
+    Transaction::GetRsuNodeId(void) const
     {
-        return m_nodeId;
+        return m_rsuNodeId;
     }
 
     void
-    Transaction::SetTransNodeId(int nodeId)
+    Transaction::SetRsuNodeId(int nodeId)
     {
-        m_nodeId = nodeId;
+        m_rsuNodeId = nodeId;
     }
 
     int
@@ -81,47 +81,47 @@ namespace ns3{
         m_timeStamp = timeStamp;
     }
 
-    bool
-    Transaction::IsValidated(void) const
+    double
+    Transaction::GetPayment(void) const
     {
-        return m_validatation;
+        return m_payment;
     }
 
     void
-    Transaction::SetValidation()
+    Transaction::SetPayment(double payment)
     {
-        m_validatation = true;
+        m_payment = payment;
     }
 
     int
-    Transaction::GetExecution(void) const
+    Transaction::GetWinnerId(void) const
     {
-        return m_execution;
+        return m_winnerId;
     }
 
     void
-    Transaction::SetExecution(int endoerserId)
+    Transaction::SetWinnerId(int winnerId)
     {
-        m_execution = endoerserId;
+        m_winnerId = winnerId;
     }
 
 
     Transaction&
     Transaction::operator= (const Transaction &tranSource)
     {
-        m_nodeId = tranSource.m_nodeId;
+        m_rsuNodeId = tranSource.m_rsuNodeId;
         m_transId = tranSource.m_transId;
         m_transSizeByte = tranSource.m_transSizeByte;
         m_timeStamp = tranSource.m_timeStamp;
-        m_validatation = tranSource.m_validatation;
-        m_validatation = tranSource.m_execution;
+        m_payment = tranSource.m_payment;
+        m_winnerId = tranSource.m_winnerId;
 
         return *this;
     }
 
     bool operator== (const Transaction &tran1, const Transaction &tran2)
     {
-        if(tran1.GetTransNodeId() == tran2.GetTransNodeId() && tran1.GetTransId() == tran2.GetTransId())
+        if(tran1.GetRsuNodeId() == tran2.GetRsuNodeId() && tran1.GetTransId() == tran2.GetTransId())
             return true;
         else
             return false;
@@ -303,7 +303,7 @@ namespace ns3{
     {
         for(auto const &tran: m_transactions)
         {
-            if(tran.GetTransNodeId()==nodeId && tran.GetTransId() == transId)
+            if(tran.GetRsuNodeId()==nodeId && tran.GetTransId() == transId)
             {
                 return tran;
             }
@@ -331,7 +331,7 @@ namespace ns3{
     {
         for(auto const &tran: m_transactions)
         {
-                if(tran.GetTransNodeId() == nodeId && tran.GetTransId() == tranId)
+                if(tran.GetRsuNodeId() == nodeId && tran.GetTransId() == tranId)
                 {
                     return true;
                 }
@@ -355,7 +355,7 @@ namespace ns3{
             for(auto const &tran: m_transactions)
             {
                 std::cout<<"[Blockheight: " <<m_blockHeight << "] Transaction nodeId: " 
-                    << tran.GetTransNodeId() << " transId : " << tran.GetTransId() << "\n";
+                    << tran.GetRsuNodeId() << " transId : " << tran.GetTransId() << "\n";
             }
         }
         else
@@ -657,16 +657,10 @@ namespace ns3{
     {
         switch(m)
         {
-            case INV: return "INV";
             case REQUEST_TRANS: return "REQUEST_TRANS";
-            case GET_HEADERS: return "GET_HEADERS";
-            case HEADERS: return "HEADERS";
-            case GET_DATA: return "GET_DATA";
-            case BLOCK: return "BLOCK";
-            case NO_MESSAGE: return "NO_MESSAGE";
-            case REPLY_TRANS: return "REPLY_TRANS";
-            case MSG_TRANS: return "MSG_TRANS";
-            case RESULT_TRANS: return "RESULT_TRANS";
+            case RESPONSE_TRANS: return "RESPONSE_TRANS";
+            case REQUEST_BLOCK: return "REQUEST_BLOCK";
+
         }
 
         return 0;

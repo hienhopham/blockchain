@@ -26,6 +26,7 @@ namespace ns3{
             virtual void StartApplication(void);
             virtual void StopApplication(void);
             virtual void HandleRead (Ptr<Socket> socket);
+            // virtual void MineBlock(void);
         
     };
     
