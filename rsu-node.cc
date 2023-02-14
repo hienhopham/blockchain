@@ -133,7 +133,17 @@ namespace ns3 {
         m_cloudServerSocket = Socket::CreateSocket (GetNode (), TcpSocketFactory::GetTypeId ());
         m_cloudServerSocket->Connect (InetSocketAddress (m_cloudServerAddr, m_blockchainPort));
 
-        CreateTransaction(0,GetNode ()->GetId());
+        std::pair<PublicKey, long> keyPair = ECDSA::generateKey();
+        publicKey = keyPair.first;
+        privateKey = keyPair.second;
+
+        std::cout << "===============================================\n";
+        std::cout << "generating ECDSA key pair for current rsu node id " << GetNode()->GetId() << ":\n";
+        publicKey.printKey();
+        std::cout << "private key = " << privateKey << "\n";
+        std::cout << "===============================================\n";
+
+        CreateTransaction(0, GetNode()->GetId());
     }
 
     void
@@ -210,7 +220,18 @@ namespace ns3 {
                     {
                         // TODO: verify the transaction using smart contract - Tuan
 
-                        // TODO: If valid, sign transaction - Tuan
+                        // int trx_id = d["transactions"]["transId"].GetInt();
+                        // int trx_rsu_id = d["transactions"]["rsuNodeId"].GetInt();
+                        // int trx_winner_id = d["transactions"]["winnerId"].GetInt();
+                        // double trx_timestamp = d["transactions"]["timestamp"].GetDouble();
+                        // double trx_payment = d["transactions"]["payment"].GetDouble();
+
+                        // // TODO: If valid, sign transaction - Tuan
+
+                        // if (trx_payment >= 0 && trx_timestamp >= 0) {
+                        //     // sign
+                        //     // TODO
+                        // }
 
                         // After signing, send response
                         d.AddMember("responseFrom", GetNode()->GetId(), d.GetAllocator());

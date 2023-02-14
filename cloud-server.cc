@@ -82,6 +82,16 @@ namespace ns3 {
             m_peersSockets[*i]->Connect (InetSocketAddress (*i, m_blockchainPort));
         }
         
+        std::pair<PublicKey, long> keyPair = ECDSA::generateKey();
+        publicKey = keyPair.first;
+        privateKey = keyPair.second;
+
+        std::cout << "===============================================\n";
+        std::cout << "generating ECDSA key pair for current cloud server node id " << GetNode()->GetId() << ":\n";
+        publicKey.printKey();
+        std::cout << "private key = " << privateKey << "\n";
+        std::cout << "===============================================\n";
+
     }
 
     void

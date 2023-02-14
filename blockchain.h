@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "ns3/address.h"
 #include "ipv4-address-helper-custom.h"
-#include "transaction.h"
+// #include "transaction.h"
 #include "common.h"
 
 namespace ns3 {
@@ -139,6 +139,9 @@ namespace ns3 {
             int GetWinnerId(void) const;
             void SetWinnerId(int m_winnerId);
 
+            bool GetVerified(void);
+            void SetVerified(void);
+
             Transaction& operator = (const Transaction &tranSource);     //Assignment Constructor
 
             friend bool operator == (const Transaction &tran1, const Transaction &tran2);
@@ -151,6 +154,7 @@ namespace ns3 {
             double m_timeStamp;
             double m_payment; 
             int m_winnerId;
+            bool m_verified;
 
     };
 

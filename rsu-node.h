@@ -10,6 +10,8 @@
 #include "../../rapidjson/stringbuffer.h"
 #include "common.h"
 #include "blockchain.h"
+#include "ecdsa.h"
+#include "sha256.h"
 
 #ifndef RSU_NODE_H
 #define RSU_NODE_H
@@ -38,6 +40,8 @@ class RsuNode : public Application{
         void SetPeersAddresses (const std::vector<Ipv4Address> &peers);
 
         void SetCloudServerAddress (const Ipv4Address &cloudServerAddr);
+
+        PublicKey publicKey;
         
 
     protected:
@@ -87,6 +91,8 @@ class RsuNode : public Application{
         std::map<Address, std::string> m_bufferedData;
         std::vector<Transaction> m_transaction;
         const int m_blockchainPort;
+
+        long privateKey;
 };
 
 }
