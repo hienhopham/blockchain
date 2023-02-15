@@ -33,8 +33,8 @@ namespace ns3{
             uint32_t m_fixedBlockSize;
             int m_nextBlockSize;
             std::default_random_engine  m_generator;
-            bool    m_fistToMine;
             double  m_timeStart;
+            bool    m_fistToMine;
             double  m_meanNumberofTransactions;
             double  m_fixedBlockTimeGeneration;
             double  m_nextBlockTime;

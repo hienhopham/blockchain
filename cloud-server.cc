@@ -56,7 +56,6 @@ namespace ns3 {
         m_minerGeneratedBlocks = 0;
         // HARDCODE
         m_fixedBlockTimeGeneration = 15;
-        long blockSize = -1;
 
         std::random_device rd;
         m_generator.seed(rd());

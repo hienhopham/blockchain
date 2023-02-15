@@ -53,10 +53,7 @@ namespace ns3 {
         m_meanBlockReceiveTime = 0;
         m_previousBlockReceiveTime = 0;
         m_meanBlockPropagationTime = 0;
-        m_meanOrderingTime = 0;
         m_meanBlockSize = 0;
-        m_numberOfPeers = m_peersAddresses.size();
-        m_transactionId = 1;
         m_totalOrdering = 0;
     }
 

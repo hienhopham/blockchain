@@ -85,7 +85,6 @@ class RsuNode : public Application{
         int m_transactionId;
         int m_totalOrdering;
         Blockchain m_blockchain;                   //The node's blockchain
-        double m_averageTransacionSize;        //The average transaction size, Needed for compressed blocks
         double m_meanOrderingTime;
         double m_meanBlockReceiveTime;         //The mean time interval between two consecutive blocks (10~15sec)
         double m_previousBlockReceiveTime;     //The time that the node received the previous block
@@ -100,8 +99,9 @@ class RsuNode : public Application{
         std::vector<Transaction> m_notValidatedTransaction;
         const int m_blockchainPort;
         const int m_headersSizeBytes;         //81Bytes
-        const int m_blockchainMessageHeader;  //The size of the Blockchain Message Header, 90 Bytes
+        double m_averageTransacionSize;        //The average transaction size, Needed for compressed blocks
         const int m_countBytes;               //The size of count variable in message, 4 Bytes
+        const int m_blockchainMessageHeader;  //The size of the Blockchain Message Header, 90 Bytes
         const int m_inventorySizeBytes;       //The size of inventories in INV messages,36Bytes
 
         
