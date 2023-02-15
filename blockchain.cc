@@ -22,6 +22,7 @@ namespace ns3{
         m_timeStamp = timeStamp;
         m_payment = payment;
         m_winnerId = winnerId;
+        m_validatation = false;
     }
     
     Transaction::Transaction()
@@ -105,6 +106,11 @@ namespace ns3{
         m_winnerId = winnerId;
     }
 
+    void
+    Transaction::SetValidation()
+    {
+        m_validatation = true;
+    }
 
     Transaction&
     Transaction::operator= (const Transaction &tranSource)
