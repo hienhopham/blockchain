@@ -209,7 +209,7 @@ ECDSA::doubleAndAdd(long n, std::pair<long, long> P, long p, long a) {
     std::pair<long, long> addend = P;
     std::vector<bool> bits = toBinary(n);
 
-    for (int i = 0; i < bits.size(); ++i) {
+    for (int i = 0; i < (int)bits.size(); ++i) {
         if (bits[i]) {
             result = addingPoints(result, addend, p, a);
         }
@@ -239,16 +239,12 @@ ECDSA::MillerRabinTest(long n) {
         r += 1;
     }
 
-    long a;
-    long x;
-    long i;
-
     for (int i = 0; i < N_TRIALS; ++i) {
-        a = randRange(2, n - 2);
-        x = modPow(a, d, n);
+        long a = randRange(2, n - 2);
+        long x = modPow(a, d, n);
 
         if (x != 1) {
-            i = 0;
+            long i = 0;
 
             while (x != (n - 1)) {
                 if (i == (r - 1)) {
@@ -285,7 +281,7 @@ ECDSA::isPrime(long n) {
         return true;
     }
 
-    for (int i = 0; i < lowPrimes.size(); ++i) {
+    for (int i = 0; i < (int)lowPrimes.size(); ++i) {
         if (n % lowPrimes[i] == 0) {
             return false;
         }
@@ -327,7 +323,7 @@ std::pair<std::pair<long, long>, long>
 ECDSA::findPrimeOrderPoint(std::vector<std::pair<long, long>> Ep, long p, long a, long b) {
     static std::pair<long, long> Point_0 = {0, 0};
 
-    long Ep_size = Ep.size();
+    long Ep_size = (long)Ep.size();
 
     if (isPrime(Ep_size + 1)) {
         std::pair<long, long> randPoint = Ep[randRange(0, Ep_size - 1)];
@@ -396,7 +392,7 @@ ECDSA::sha256(std::string input) {
     char buf[2*SHA256::DIGEST_SIZE+1];
     buf[2*SHA256::DIGEST_SIZE] = 0;
 
-    for (int i = 0; i < SHA256::DIGEST_SIZE; i++)
+    for (int i = 0; i < (int)SHA256::DIGEST_SIZE; i++)
         sprintf(buf+i*2, "%02x", digest[i]);
     return std::string(buf);
 
