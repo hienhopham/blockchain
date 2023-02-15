@@ -95,6 +95,16 @@ namespace ns3 {
         m_cloudServerAddr = cloudServerAddr;
     }
 
+    // To manage resources
+    void
+    RsuNode::DoDispose(void)
+    {
+        NS_LOG_FUNCTION(this);
+        m_listenSocket = 0;
+
+        Application::DoDispose();
+    }
+
     void
     RsuNode::StartApplication ()    // Called at time specified by Start
     {
@@ -230,10 +240,138 @@ namespace ns3 {
                             SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
                         }
                     }
+
+                    case RESULT_TRANS:
+                    {            
+                        unsigned int j;
+
+                            for(j = 0; j < d["transactions"].Size(); j++)
+                            {
+                                uint32_t rsuNodeId = (uint32_t) d["transactions"][j]["rsuNodeId"].GetInt();
+                                uint32_t transId = (uint32_t) d["transactions"][j]["transId"].GetInt();
+                                double timestamp = d["transactions"][j]["timestamp"].GetDouble();
+                                double payment = d["transactions"][j]["payment"].GetDouble();
+                                uint32_t winnerId = (uint32_t) d["transactions"][j]["winnerId"].GetInt();
+                                
+                                // Check result transaction
+                                //if(HasResultTransaction(rsuNodeId, transId, payment, winnerId))
+                                //{
+                                //    NS_LOG_INFO("RESULT_TRANS: RSU node " << GetNode()->GetId()
+                                //                << " has result_transaction nodeId: " << rsuNodeId
+                                //                << " and transId: " << transId << " and payment: " << payment << " and winnerId: " << winnerId);
+                            
+                                //}
+                                //else
+                                {
+                                    // Create a new transaction
+                                    Transaction newTrans(rsuNodeId, transId, timestamp, payment, winnerId);
+                                    m_resultTransaction.push_back(newTrans);
+
+                                    if(GetNode()->GetId() != rsuNodeId)
+                                    {
+                                        AdvertiseNewTransaction(newTrans, RESULT_TRANS, InetSocketAddress::ConvertFrom(from).GetIpv4());
+                                    }
+                                    else
+                                    {
+                                        m_totalCreatedTransaction++;
+                                        // Measure latency
+                                        m_meanLatency = (m_meanLatency*static_cast<double>(m_totalCreatedTransaction) + (Simulator::Now().GetSeconds() - timestamp))/static_cast<double>(m_totalCreatedTransaction + 1);
+                                        //std::cout << "m_totalCreatedTransaction =" << m_totalCreatedTransaction <<"s \n";
+                                        // Measure latency
+                                        std::cout << "The latency = "<< m_meanLatency <<"s \n";
+                                        std::cout<< "------------------------\n";
+
+                                    }
+                                }
+                            }   
+
+                            break;
+                    }
                 }
             }
         }
         
+    }
+
+    void
+    RsuNode::AdvertiseNewTransaction(const Transaction &newTrans, enum Messages megType, Ipv4Address receivedFromIpv4)
+    {
+        NS_LOG_FUNCTION(this);
+
+        rapidjson::Document transD;
+
+        int nodeId = newTrans.GetRsuNodeId();
+        int transId = newTrans.GetTransId();
+        double tranTimestamp = newTrans.GetTransTimeStamp();
+
+        transD.SetObject();
+
+        rapidjson::Value value;
+        rapidjson::Value array(rapidjson::kArrayType);
+        rapidjson::Value transInfo(rapidjson::kObjectType);
+
+        value.SetString("transaction");
+        transD.AddMember("type", value, transD.GetAllocator());
+
+        value = megType;
+        transD.AddMember("message", value, transD.GetAllocator());
+
+        value = newTrans.GetRsuNodeId();
+        transInfo.AddMember("nodeId", value, transD.GetAllocator());
+
+        value = newTrans.GetTransId();
+        transInfo.AddMember("transId", value, transD.GetAllocator());
+
+        value = newTrans.GetTransTimeStamp();
+        transInfo.AddMember("timestamp", value, transD.GetAllocator());
+
+        value = newTrans.GetPayment();
+        transInfo.AddMember("payment", value, transD.GetAllocator());
+
+        value = newTrans.GetWinnerId();
+        transInfo.AddMember("winnerId", value, transD.GetAllocator());
+
+        array.PushBack(transInfo, transD.GetAllocator());
+        transD.AddMember("transactions", array, transD.GetAllocator());
+
+        rapidjson::StringBuffer transactionInfo;
+        rapidjson::Writer<rapidjson::StringBuffer> tranWriter(transactionInfo);
+        transD.Accept(tranWriter);
+
+        for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
+        {
+            if(*i != receivedFromIpv4)
+            {
+                const uint8_t delimiter[] = "#";
+
+                m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(transactionInfo.GetString()), transactionInfo.GetSize(), 0);
+                m_peersSockets[*i]->Send(delimiter, 1, 0);
+            }
+        
+        }
+
+    }
+
+
+    // Check result transaction
+    bool 
+    RsuNode::HasResultTransaction(int rsuNodeId, int transId, double payment, int winnerId)
+    {
+        for(auto const &transaction: m_resultTransaction)
+        {
+            if(transaction.GetRsuNodeId() == rsuNodeId && transaction.GetTransId() == transId && transaction.GetPayment() == payment && transaction.GetWinnerId() == winnerId)
+            {
+                return true;
+            }
+        }
+        return false;   
+    }
+
+    void
+    RsuNode::SetNodeStats (nodeStatistics *nodeStats)
+    {
+        NS_LOG_FUNCTION(this);
+        m_nodeStats = nodeStats;
     }
 
     void

@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	LogComponentEnable ("RsuNode", LOG_LEVEL_INFO);
 	LogComponentEnable ("TopologyHelper", LOG_LEVEL_INFO);
 
-	uint32_t numOfRsu = 2;
+	uint32_t numOfRsu = 3;
 	const uint16_t blockchainPort = 8333;
 	const uint16_t cloudServerId = 0;
 
@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
     std::map<uint32_t, std::vector<Ipv4Address>> nodeToPeerConnections;
 	std::map<uint32_t, Ipv4Address> nodeToCloudServerConnectionsIp;
 
+	
 	//Initialize the topology
 	TopologyHelper topologyHelper(numOfRsu, cloudServerId);
 
@@ -99,5 +100,6 @@ int main(int argc, char *argv[])
 
 	Simulator::Run ();
   	Simulator::Destroy ();
+
   	return 0;
 }

@@ -6,7 +6,6 @@
 #include <algorithm>
 #include "ns3/address.h"
 #include "ipv4-address-helper-custom.h"
-#include "transaction.h"
 #include "common.h"
 
 namespace ns3 {

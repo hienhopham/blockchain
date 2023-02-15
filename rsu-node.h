@@ -56,6 +56,14 @@ class RsuNode : public Application{
 
         void CreateTransaction(double payment, int winnerId);
 
+        bool HasResultTransaction(int nodeId, int transId, double payment, int winnerId);
+
+        void AdvertiseNewTransaction(const Transaction &newTrans, enum Messages megType, Ipv4Address receivedFromIpv4);
+
+        void SetNodeStats (nodeStatistics *nodeStats);
+
+        void DoDispose(void);
+
         /**
          * \brief Sends a message to a peer
          * \param receivedMessage the type of the received message
@@ -82,10 +90,18 @@ class RsuNode : public Application{
         int m_numberOfPeers;
         int m_transactionId;
 
+        // The average latency
+        double m_meanLatency;
+        // The total created transactions
+        int m_totalCreatedTransaction;
+
+        nodeStatistics  *m_nodeStats;
+
         std::vector<Ipv4Address> m_peersAddresses;
         std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;
         std::map<Address, std::string> m_bufferedData;
         std::vector<Transaction> m_transaction;
+        std::vector<Transaction>    m_resultTransaction;
         const int m_blockchainPort;
 };
 
