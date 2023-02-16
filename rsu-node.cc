@@ -347,11 +347,11 @@ namespace ns3 {
         m_transactionId++;
 
         int miliSec = 250;
-        if (GetNode()->GetId() % 2 == 0) {
-            miliSec = 250;
-        } else {
-            miliSec = 251;
-        }
+        // if (GetNode()->GetId() % 2 == 0) {
+        //     miliSec = 250;
+        // } else {
+        //     miliSec = 251;
+        // }
         Simulator::Schedule(MilliSeconds(miliSec), &RsuNode::CreateTransaction, this);
 
     }
