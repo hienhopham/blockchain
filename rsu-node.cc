@@ -297,7 +297,7 @@ namespace ns3 {
         rapidjson::Document transD;
 
         int transId = m_transactionId;
-        double tranTimestamp = Simulator::Now().GetSeconds();
+        double tranTimestamp = Simulator::Now().GetPicoSeconds();
         transD.SetObject();
 
         Transaction newTrans(GetNode()->GetId(), transId, tranTimestamp, m_payment, m_winnerId);

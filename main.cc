@@ -152,10 +152,10 @@ int main(int argc, char *argv[])
 		}
     }
 
-    rsuNodes.Start(Seconds(0));
+    rsuNodes.Start(Seconds(0.1));
     rsuNodes.Stop(MilliSeconds(2500));
 
-	cloudServerContainer.Start(Seconds(0));
+	cloudServerContainer.Start(Seconds(0.1));
 	cloudServerContainer.Stop(MilliSeconds(2500));
 
 
