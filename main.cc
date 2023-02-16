@@ -49,11 +49,10 @@ int main(int argc, char *argv[])
 	uint32_t numOfRsuFromFile = 0;
 	// get winner id for each rsu from file
 	std::map<uint32_t, uint32_t> rsuMapWinner;
-	uint32_t winnerId = 1;
 	std::ifstream infileWinner(winnersPath);
 
 	// get payment for each winner from file
-	std::map<uint32_t, double> winnerMapPayment;
+	std::map<uint32_t, double> rsuMapPayment;
 	std::ifstream infilePayment(paymentsPath);
 
 
@@ -63,6 +62,7 @@ int main(int argc, char *argv[])
 	} else {
 		std::cout << "Use input from files " << "\n";
 	
+		uint32_t winnerId = 1;
 		std::string lineWinner;
 		while (std::getline(infileWinner, lineWinner)) {
 			if (lineWinner.empty()) {
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 		
 		infileWinner.close();
 		
-		winnerId = 1;
+		uint32_t rsuId = 1;
 		std::string linePayment;
 		while (std::getline(infilePayment, linePayment)) {
 			if (linePayment.empty()) {
@@ -84,8 +84,8 @@ int main(int argc, char *argv[])
 			}
 
 			double payment = std::stod(linePayment);
-			winnerMapPayment[winnerId] = payment;
-			winnerId++;
+			rsuMapPayment[rsuId] = payment;
+			rsuId++;
 		}
 		
 		infilePayment.close();
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
 		if (node.first != cloudServerId) {
 			uint32_t winnerId = rsuMapWinner[node.first];
-			double payment = winnerMapPayment[winnerId];
+			double payment = rsuMapPayment[node.first];
 			const std::string typeId = "ns3::RsuNode";
 			factory.SetTypeId(typeId);
 			factory.Set("Ip", AddressValue(InetSocketAddress(Ipv4Address::GetAny(), blockchainPort)));
