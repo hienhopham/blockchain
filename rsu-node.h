@@ -87,6 +87,7 @@ class RsuNode : public Application{
         int m_transactionId;
         uint32_t m_winnerId;
         double m_payment;
+        double m_transThreshold;
 
         std::vector<Ipv4Address> m_peersAddresses;
         std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;

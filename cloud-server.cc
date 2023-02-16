@@ -171,7 +171,7 @@ namespace ns3 {
 
                         uint32_t requestBlockFrom = (uint32_t) d["requestBlockFrom"].GetInt();
 
-                        // std::cout<<"Node " << GetNode()->GetId() << " receives REQUEST_BLOCK from: " << requestBlockFrom << "\n" << parsedPacket << "\n";
+                        std::cout<<"Node " << GetNode()->GetId() << " receives REQUEST_BLOCK from: " << requestBlockFrom << "\n" << parsedPacket << "\n";
                     }
             
                 }

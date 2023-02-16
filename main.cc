@@ -36,9 +36,11 @@ int main(int argc, char *argv[])
 	const std::string currentPath = std::getenv("PWD");
 	const std::string winnersPath = currentPath + "/scratch/blockchain/auction/winners.txt";
 	const std::string paymentsPath = currentPath + "/scratch/blockchain/auction/payments.txt";
+	const double transThreshold = 2;
 
 	CommandLine cmd (__FILE__);
 	cmd.AddValue ("numOfRsu", "Number of rsu nodes", numOfRsu);
+	cmd.AddValue ("transThreshold", "The threshold for the payments", numOfRsu);
 	cmd.Parse (argc, argv);
 
 	NS_LOG_INFO("\nNumber of Rsu nodes:" << numOfRsu);
@@ -49,48 +51,50 @@ int main(int argc, char *argv[])
 	std::map<uint32_t, uint32_t> rsuMapWinner;
 	uint32_t winnerId = 1;
 	std::ifstream infileWinner(winnersPath);
-	if (!infileWinner) {
-		std::cerr << "Error: could not open file: " << winnersPath << std::endl;
-		return 1;
-	}
-	
-	std::string lineWinner;
-	while (std::getline(infileWinner, lineWinner)) {
-		if (lineWinner.empty()) {
-			continue; // skip empty line
-		}
-		int rsuId = std::stoi(lineWinner);
-		rsuMapWinner[rsuId] = winnerId;
-		winnerId++;
-		numOfRsuFromFile++;
-	}
-	
-	infileWinner.close();
-
 
 	// get payment for each winner from file
 	std::map<uint32_t, double> winnerMapPayment;
-	winnerId = 1;
 	std::ifstream infilePayment(paymentsPath);
-	if (!infilePayment) {
-		std::cerr << "Error: could not open file: " << paymentsPath << std::endl;
-		return 1;
-	}
+
+
+	if (!infileWinner || !infilePayment) {
+		std::cerr << "Error: could not open one of the files: " << winnersPath << ", \n";
+		std::cerr << paymentsPath << "\n";
+	} else {
+		std::cerr << "Use input from files " << "\n";
 	
-	std::string linePayment;
-	while (std::getline(infilePayment, linePayment)) {
-		if (linePayment.empty()) {
-			continue; // skip empty line
+		std::string lineWinner;
+		while (std::getline(infileWinner, lineWinner)) {
+			if (lineWinner.empty()) {
+				continue; // skip empty line
+			}
+			int rsuId = std::stoi(lineWinner);
+			rsuMapWinner[rsuId] = winnerId;
+			winnerId++;
+			numOfRsuFromFile++;
 		}
+		
+		infileWinner.close();
+		
+		winnerId = 1;
+		std::string linePayment;
+		while (std::getline(infilePayment, linePayment)) {
+			if (linePayment.empty()) {
+				continue; // skip empty line
+			}
 
-		double payment = std::stod(linePayment);
-		winnerMapPayment[winnerId] = payment;
-		winnerId++;
+			double payment = std::stod(linePayment);
+			winnerMapPayment[winnerId] = payment;
+			winnerId++;
+		}
+		
+		infilePayment.close();
+
+
+		numOfRsu = numOfRsuFromFile;
 	}
-	
-	infilePayment.close();
 
-	numOfRsu = numOfRsuFromFile;
+	
 	Ipv4InterfaceContainer  ipv4Interfacecontainer;
     std::map<uint32_t, std::vector<Ipv4Address>> nodeToPeerConnections;
 	std::map<uint32_t, Ipv4Address> nodeToCloudServerConnectionsIp;
@@ -125,6 +129,7 @@ int main(int argc, char *argv[])
 			factory.Set("Ip", AddressValue(InetSocketAddress(Ipv4Address::GetAny(), blockchainPort)));
 			factory.Set("WinnerId", UintegerValue(winnerId));
 			factory.Set("Payment", DoubleValue(payment));
+			factory.Set("TransThreshold", DoubleValue(transThreshold));
 
 			Ptr<RsuNode> rsuNode = factory.Create<RsuNode>();
 

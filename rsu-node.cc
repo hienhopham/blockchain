@@ -15,7 +15,6 @@
 #include "ns3/uinteger.h"
 #include "ns3/double.h"
 #include "rsu-node.h"
-// #include "transaction.h"
 #include "blockchain.h"
 #include <fstream>
 
@@ -47,6 +46,11 @@ namespace ns3 {
                         "The payment of the winning bid." ,
                         DoubleValue(0),
                         MakeDoubleAccessor(&RsuNode::m_payment),
+                        MakeDoubleChecker<double>())
+        .AddAttribute("TransThreshold",
+                        "The threshold for the payments." ,
+                        DoubleValue(0),
+                        MakeDoubleAccessor(&RsuNode::m_transThreshold),
                         MakeDoubleChecker<double>())
         ;
         return tid;
@@ -224,33 +228,36 @@ namespace ns3 {
                     case REQUEST_TRANS:
                     {
                         // TODO: verify the transaction using smart contract - Tuan
+                        rapidjson::Value& trans = d["transactions"];
 
                         // int trx_id = d["transactions"]["transId"].GetInt();
                         // int trx_rsu_id = d["transactions"]["rsuNodeId"].GetInt();
                         // int trx_winner_id = d["transactions"]["winnerId"].GetInt();
                         // double trx_timestamp = d["transactions"]["timestamp"].GetDouble();
-                        // double trx_payment = d["transactions"]["payment"].GetDouble();
+                        double trx_payment = trans["payment"].GetDouble();
 
                         // // TODO: If valid, sign transaction - Tuan
 
-                        // if (trx_payment >= 0 && trx_timestamp >= 0) {
-                        //     // sign
-                        //     // TODO
-                        // }
+                        if (trx_payment >= m_transThreshold) {
+                            // mark this trans as valid
+                            trans.AddMember("verified", true, d.GetAllocator());
 
-                        // After signing, send response
+                            // TODO: sign
+                        } else {
+                            trans.AddMember("verified", false, d.GetAllocator());
+                        }
+
                         d.AddMember("responseFrom", GetNode()->GetId(), d.GetAllocator());
                         SendMessage(REQUEST_TRANS, RESPONSE_TRANS, d, from);
-                        // std::cout<<"Node " << GetNode()->GetId() << " - REQUEST_TRANS \n";
                     }
 
                     case RESPONSE_TRANS:
                     {
     
                         uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
-                        uint32_t requestTransFrom = (uint32_t) d["transactions"][0]["rsuNodeId"].GetInt();
+                        uint32_t requestTransFrom = (uint32_t) d["transactions"]["rsuNodeId"].GetInt();
                         if (requestTransFrom == GetNode()->GetId()) {
-                             // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
+                            // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
                             // std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
                             d.EraseMember("responseFrom");
                             d.AddMember("requestBlockFrom", GetNode()->GetId(), d.GetAllocator());
@@ -320,8 +327,8 @@ namespace ns3 {
         value = newTrans.GetWinnerId();
         transInfo.AddMember("winnerId", value, transD.GetAllocator());
 
-        array.PushBack(transInfo, transD.GetAllocator());
-        transD.AddMember("transactions", array, transD.GetAllocator());
+        // array.PushBack(transInfo, transD.GetAllocator());
+        transD.AddMember("transactions", transInfo, transD.GetAllocator());
 
         m_transaction.push_back(newTrans);
         //m_notValidatedTransaction.push_back(newTrans);
