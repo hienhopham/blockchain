@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 		std::cerr << "Error: could not open one of the files: " << winnersPath << ", \n";
 		std::cerr << paymentsPath << "\n";
 	} else {
-		std::cerr << "Use input from files " << "\n";
+		std::cout << "Use input from files " << "\n";
 	
 		std::string lineWinner;
 		while (std::getline(infileWinner, lineWinner)) {

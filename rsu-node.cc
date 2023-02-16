@@ -254,7 +254,7 @@ namespace ns3 {
                     case RESPONSE_TRANS:
                     {
     
-                        uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
+                        // uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
                         uint32_t requestTransFrom = (uint32_t) d["transactions"]["rsuNodeId"].GetInt();
                         if (requestTransFrom == GetNode()->GetId()) {
                             // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
