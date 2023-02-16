@@ -38,6 +38,16 @@ namespace ns3 {
                         AddressValue(),
                         MakeAddressAccessor(&RsuNode::m_nodeIp),
                         MakeAddressChecker())
+        .AddAttribute("WinnerId",
+                        "The winning bid of this rsu." ,
+                        UintegerValue(16),
+                        MakeUintegerAccessor(&RsuNode::m_winnerId),
+                        MakeUintegerChecker<uint32_t>())
+        .AddAttribute("Payment",
+                        "The payment of the winning bid." ,
+                        DoubleValue(0),
+                        MakeDoubleAccessor(&RsuNode::m_payment),
+                        MakeDoubleChecker<double>())
         ;
         return tid;
     }
@@ -99,11 +109,6 @@ namespace ns3 {
     RsuNode::StartApplication ()    // Called at time specified by Start
     {
         NS_LOG_FUNCTION (this);
-        // Create the socket if not already
-
-        srand(time(NULL) + GetNode()->GetId());
-        // NS_LOG_INFO ("Node " << GetNode()->GetId() << ": ip = " << m_nodeIp);
-        // NS_LOG_INFO ("Node " << GetNode()->GetId() << ": m_numberOfPeers = " << m_numberOfPeers);
 
         // Set up the listening socket, listen on every ip
         if (!m_listenSocket)
@@ -143,7 +148,7 @@ namespace ns3 {
         std::cout << "private key = " << privateKey << "\n";
         std::cout << "===============================================\n";
 
-        CreateTransaction(0, GetNode()->GetId());
+        CreateTransaction();
     }
 
     void
@@ -236,7 +241,7 @@ namespace ns3 {
                         // After signing, send response
                         d.AddMember("responseFrom", GetNode()->GetId(), d.GetAllocator());
                         SendMessage(REQUEST_TRANS, RESPONSE_TRANS, d, from);
-                        std::cout<<"Node " << GetNode()->GetId() << " - REQUEST_TRANS \n";
+                        // std::cout<<"Node " << GetNode()->GetId() << " - REQUEST_TRANS \n";
                     }
 
                     case RESPONSE_TRANS:
@@ -246,8 +251,9 @@ namespace ns3 {
                         uint32_t requestTransFrom = (uint32_t) d["transactions"][0]["rsuNodeId"].GetInt();
                         if (requestTransFrom == GetNode()->GetId()) {
                              // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
-                            std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
-
+                            // std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
+                            d.EraseMember("responseFrom");
+                            d.AddMember("requestBlockFrom", GetNode()->GetId(), d.GetAllocator());
                             SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
                         }
                     }
@@ -277,7 +283,7 @@ namespace ns3 {
     }
 
     void
-    RsuNode::CreateTransaction(double payment, int winnerId)
+    RsuNode::CreateTransaction()
     {
         NS_LOG_FUNCTION(this);
 
@@ -287,7 +293,7 @@ namespace ns3 {
         double tranTimestamp = Simulator::Now().GetSeconds();
         transD.SetObject();
 
-        Transaction newTrans(GetNode()->GetId(), transId, tranTimestamp, payment, winnerId);
+        Transaction newTrans(GetNode()->GetId(), transId, tranTimestamp, m_payment, m_winnerId);
 
         rapidjson::Value value;
         rapidjson::Value array(rapidjson::kArrayType);
@@ -331,10 +337,15 @@ namespace ns3 {
             m_peersSockets[*i]->Send(delimiter, 1, 0);
         
         }
-        //std::cout<< "time : "<<Simulator::Now().GetSeconds() << ", Node type: "<< m_committerType <<" - NodeId: " <<GetNode()->GetId() << " created and sent transaction\n";
         m_transactionId++;
 
-        // ScheduleNextTransaction();
+        int miliSec = 250;
+        if (GetNode()->GetId() % 2 == 0) {
+            miliSec = 250;
+        } else {
+            miliSec = 251;
+        }
+        Simulator::Schedule(MilliSeconds(miliSec), &RsuNode::CreateTransaction, this);
 
     }
 

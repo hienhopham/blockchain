@@ -163,14 +163,15 @@ namespace ns3 {
                     {
                         //TODO: verify signature, reorder here - Tuan
                         //TODO: create new block, broadcast to others here - Phuong
-                        //TODO: verify signature, reorder here - Tuan
-                        //TODO: create new block, broadcast to others here - Phuong
                         // TODO: Create new block
                         // Create Block: Input(List of ordered transaction), Output(Block)
                         // Need to define Block class
                         // TODO: Broadcast 
                         // Broadcast: Input(List of rsu nodes, block), Output(None)
-                        std::cout<<"Node " << GetNode()->GetId() << " receives REQUEST_BLOCK \n";
+
+                        uint32_t requestBlockFrom = (uint32_t) d["requestBlockFrom"].GetInt();
+
+                        // std::cout<<"Node " << GetNode()->GetId() << " receives REQUEST_BLOCK from: " << requestBlockFrom << "\n" << parsedPacket << "\n";
                     }
             
                 }

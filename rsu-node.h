@@ -58,7 +58,7 @@ class RsuNode : public Application{
 
         void HandlePeerError (Ptr<Socket> socket);
 
-        void CreateTransaction(double payment, int winnerId);
+        void CreateTransaction();
 
         /**
          * \brief Sends a message to a peer
@@ -85,6 +85,8 @@ class RsuNode : public Application{
         Ipv4Address m_cloudServerAddr;
         int m_numberOfPeers;
         int m_transactionId;
+        uint32_t m_winnerId;
+        double m_payment;
 
         std::vector<Ipv4Address> m_peersAddresses;
         std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;

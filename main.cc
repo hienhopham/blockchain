@@ -8,7 +8,9 @@
 #include "ns3/log.h"
 #include "ns3/double.h"
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
+#include <iostream>
 #include <time.h>
 #include <sys/time.h>
 #include "topology-helper.h"
@@ -26,10 +28,14 @@ int main(int argc, char *argv[])
 	LogComponentEnable ("Blockchain", LOG_LEVEL_INFO);
 	LogComponentEnable ("RsuNode", LOG_LEVEL_INFO);
 	LogComponentEnable ("TopologyHelper", LOG_LEVEL_INFO);
+	LogComponentEnable ("CloudServer", LOG_LEVEL_INFO);
 
 	uint32_t numOfRsu = 2;
 	const uint16_t blockchainPort = 8333;
 	const uint16_t cloudServerId = 0;
+	const std::string currentPath = std::getenv("PWD");
+	const std::string winnersPath = currentPath + "/scratch/blockchain/auction/winners.txt";
+	const std::string paymentsPath = currentPath + "/scratch/blockchain/auction/payments.txt";
 
 	CommandLine cmd (__FILE__);
 	cmd.AddValue ("numOfRsu", "Number of rsu nodes", numOfRsu);
@@ -37,6 +43,54 @@ int main(int argc, char *argv[])
 
 	NS_LOG_INFO("\nNumber of Rsu nodes:" << numOfRsu);
 
+
+	uint32_t numOfRsuFromFile = 0;
+	// get winner id for each rsu from file
+	std::map<uint32_t, uint32_t> rsuMapWinner;
+	uint32_t winnerId = 1;
+	std::ifstream infileWinner(winnersPath);
+	if (!infileWinner) {
+		std::cerr << "Error: could not open file: " << winnersPath << std::endl;
+		return 1;
+	}
+	
+	std::string lineWinner;
+	while (std::getline(infileWinner, lineWinner)) {
+		if (lineWinner.empty()) {
+			continue; // skip empty line
+		}
+		int rsuId = std::stoi(lineWinner);
+		rsuMapWinner[rsuId] = winnerId;
+		winnerId++;
+		numOfRsuFromFile++;
+	}
+	
+	infileWinner.close();
+
+
+	// get payment for each winner from file
+	std::map<uint32_t, double> winnerMapPayment;
+	winnerId = 1;
+	std::ifstream infilePayment(paymentsPath);
+	if (!infilePayment) {
+		std::cerr << "Error: could not open file: " << paymentsPath << std::endl;
+		return 1;
+	}
+	
+	std::string linePayment;
+	while (std::getline(infilePayment, linePayment)) {
+		if (linePayment.empty()) {
+			continue; // skip empty line
+		}
+
+		double payment = std::stod(linePayment);
+		winnerMapPayment[winnerId] = payment;
+		winnerId++;
+	}
+	
+	infilePayment.close();
+
+	numOfRsu = numOfRsuFromFile;
 	Ipv4InterfaceContainer  ipv4Interfacecontainer;
     std::map<uint32_t, std::vector<Ipv4Address>> nodeToPeerConnections;
 	std::map<uint32_t, Ipv4Address> nodeToCloudServerConnectionsIp;
@@ -61,13 +115,16 @@ int main(int argc, char *argv[])
 
     for(auto &node : nodeToPeerConnections)
     {
-		NS_LOG_INFO("\nNode:" << node.first << "- Num of peer: " << node.second.size());
 		Ptr<Node> targetNode = topologyHelper.GetNode(node.first);
 
 		if (node.first != cloudServerId) {
+			uint32_t winnerId = rsuMapWinner[node.first];
+			double payment = winnerMapPayment[winnerId];
 			const std::string typeId = "ns3::RsuNode";
 			factory.SetTypeId(typeId);
 			factory.Set("Ip", AddressValue(InetSocketAddress(Ipv4Address::GetAny(), blockchainPort)));
+			factory.Set("WinnerId", UintegerValue(winnerId));
+			factory.Set("Payment", DoubleValue(payment));
 
 			Ptr<RsuNode> rsuNode = factory.Create<RsuNode>();
 
@@ -91,13 +148,17 @@ int main(int argc, char *argv[])
     }
 
     rsuNodes.Start(Seconds(0));
-    rsuNodes.Stop(Minutes(1500));
+    rsuNodes.Stop(MilliSeconds(2500));
 
 	cloudServerContainer.Start(Seconds(0));
-	cloudServerContainer.Stop(Minutes(1500));
+	cloudServerContainer.Stop(MilliSeconds(2500));
 
 
-	Simulator::Run ();
-  	Simulator::Destroy ();
+    Simulator::Stop(MilliSeconds(2500));
+	Simulator::Run();
+    Simulator::Destroy();
+
+
   	return 0;
+
 }
