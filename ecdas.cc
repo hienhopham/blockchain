@@ -409,38 +409,75 @@ ECDSA::digitizeMessage(std::string message, long p) {
     return mod(result, p);
 }
 
+// std::pair<long, long> 
+// ECDSA::generateSignature(long p, long a, long b, std::pair<long, long> G, long n, long privateKey, long hashMsg) {
+//     static std::pair<long, long> Point_0 = {0, 0};
+//     long k = randRange(1, n - 1);
+//     std::pair<long, long> kG = doubleAndAdd(k, G, p, a);
+//     long r = mod(kG.first, n);
+
+//     if (r == 0) {
+//         generateSignature(p, a, b, G, n, privateKey, hashMsg);
+//         return Point_0;
+//     }
+
+//     long s = mod(modularInverse(k, n) * (hashMsg + privateKey * r), n);
+//     std::pair<long, long> result = {r, s};
+
+//     return result;
+// }
+
 std::pair<long, long> 
-ECDSA::generateSignature(long p, long a, long b, std::pair<long, long> G, long n, long privateKey, long hashMsg) {
-    static std::pair<long, long> Point_0 = {0, 0};
+ECDSA::generateSignature(PublicKey publicKey, long privateKey, long hashMsg) {
+    long p = publicKey.p;
+    long a = publicKey.a;
+    long n = publicKey.n;
+    std::pair<long, long> G = publicKey.G;
+    std::pair<long, long> Point_0 = {0, 0};
+    long idx = 0;
+    restart:
+    ++idx;
     long k = randRange(1, n - 1);
     std::pair<long, long> kG = doubleAndAdd(k, G, p, a);
     long r = mod(kG.first, n);
 
     if (r == 0) {
-        generateSignature(p, a, b, G, n, privateKey, hashMsg);
-        return Point_0;
+        if (idx < n) {
+            goto restart;
+        }
+        else {
+            return Point_0;
+        }
     }
 
     long s = mod(modularInverse(k, n) * (hashMsg + privateKey * r), n);
+
+    if (s == 0) {
+        if (idx < n) {
+            goto restart;
+        }
+        else {
+            return Point_0;
+        }
+    }
+    
     std::pair<long, long> result = {r, s};
 
     return result;
 }
 
 bool 
-ECDSA::verifySignature(PublicKey publicKey, long privateKey, std::pair<long, long> signature, long n, long hashMsg) {
-    long p = publicKey.p;
-    long a = publicKey.a;
-    std::pair<long, long> G = publicKey.G;
-    std::pair<long, long> Q = publicKey.Q;
-    long r = signature.first;
-    long s = signature.second;
+ECDSA::verifySignature(long hashMsg, long p, long a, long n, long xG, long yG, long xQ, long yQ, long r, long s) {
+    std::pair<long, long> G = {xG, yG};
+    std::pair<long, long> Q = {xQ, yQ};
 
     if (r < 1 || r >= n) {
+        std::cout << "r = " << r << " not in range (1, " << n << "] => Fraud signature.\n";
         return false;
     }
 
     if (s < 1 || s >= n) {
+        std::cout << "s = " << s << " not in range (1, " << n << "] => Fraud signature.\n";
         return false;
     }
 
@@ -453,8 +490,44 @@ ECDSA::verifySignature(PublicKey publicKey, long privateKey, std::pair<long, lon
     long v = mod(A.first, n);
 
     if (v != r) {
+        std::cout << "v = " << v << " =/= r = " << r << " => Fraud signature.\n";
         return false;
     }
 
+    std::cout << "v = r = " << v << " => Genuine signature.\n";
     return true;
 }
+
+// bool 
+// ECDSA::verifySignature(PublicKey publicKey, std::pair<long, long> signature, long n, long hashMsg) {
+//     long p = publicKey.p;
+//     long a = publicKey.a;
+//     std::pair<long, long> G = publicKey.G;
+//     std::pair<long, long> Q = publicKey.Q;
+//     long r = signature.first;
+//     long s = signature.second;
+
+//     if (r < 1 || r >= n) {
+//         return false;
+//     }
+
+//     if (s < 1 || s >= n) {
+//         return false;
+//     }
+
+//     long w = modularInverse(s, n);
+//     long u1 = mod(hashMsg * w, n);
+//     long u2 = mod(r * w, n);
+//     std::pair<long, long> A1 = doubleAndAdd(u1, G, p, a);
+//     std::pair<long, long> A2 = doubleAndAdd(u2, Q, p, a);
+//     std::pair<long, long> A = addingPoints(A1, A2, p, a);
+//     long v = mod(A.first, n);
+
+//     if (v != r) {
+//         std::cout << "v = " << v << " =/= r = " << r << " => Fraud signature.\n";
+//         return false;
+//     }
+
+//     std::cout << "v = r = " << v << " => Genuine signature.\n";
+//     return true;
+// }
