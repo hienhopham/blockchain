@@ -36,7 +36,6 @@ namespace ns3 {
         COMMITTER,  //0
         ENDORSER,   //1
         CLIENT,     //2
-        ORDER,      //3
     };
     
     enum ProtocolType
