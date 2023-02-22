@@ -64,6 +64,7 @@ namespace ns3 {
         m_cloudServerSocket = 0;
         m_numberOfPeers = m_peersAddresses.size();
         m_transactionId = 1;
+        m_responseCount = 0;
         m_meanOrderingTime = 0;
         m_meanBlockReceiveTime = 0;
         m_previousBlockReceiveTime = 0;
@@ -330,12 +331,26 @@ namespace ns3 {
                         // uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
                         uint32_t requestTransFrom = (uint32_t) d["transactions"]["rsuNodeId"].GetInt();
                         if (requestTransFrom == GetNode()->GetId()) {
+                             // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
+                            std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
+                             // // If the response is valid, then count up the "m_responseCount"
+                            m_responseCount++;
+                            std::cout<<"Current Number of Response: " << m_responseCount << "\n";
+                            
+                             // If the number of valid responses equals to number of peers, then the transaction is valid. 
+                            if (m_responseCount == m_numberOfPeers){
+                                
+                                std::cout<< "Sending the  Valid Transaction of " << GetNode()->GetId() <<  " to  Cloud Server\n";
+                                SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
+                                m_responseCount = 0;
+                            }
+                        }
                             // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
                             // std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
                             d.EraseMember("responseFrom");
                             d.AddMember("requestBlockFrom", GetNode()->GetId(), d.GetAllocator());
 
-                            SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
+                            
                         }
                     }
                 }

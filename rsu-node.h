@@ -87,6 +87,7 @@ class RsuNode : public Application{
         Ipv4Address m_cloudServerAddr;
         int m_numberOfPeers;
         int m_transactionId;
+        int m_responseCount; // Count the number of valid responses from peers
         uint32_t m_winnerId;
         double m_payment;
         double m_transThreshold;
