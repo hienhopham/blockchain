@@ -10,6 +10,8 @@
 #include "../../rapidjson/stringbuffer.h"
 #include "common.h"
 #include "blockchain.h"
+#include "ecdsa.h"
+#include "sha256.h"
 
 #ifndef RSU_NODE_H
 #define RSU_NODE_H
@@ -39,6 +41,8 @@ class RsuNode : public Application{
 
         void SetCloudServerAddress (const Ipv4Address &cloudServerAddr);
 
+        PublicKey publicKey;
+        
         void SetProtocolType (enum ProtocolType protocolType);
         
 
@@ -56,7 +60,7 @@ class RsuNode : public Application{
 
         void HandlePeerError (Ptr<Socket> socket);
 
-        void CreateTransaction(double payment, int winnerId);
+        void CreateTransaction();
 
         /**
          * \brief Sends a message to a peer
@@ -83,6 +87,10 @@ class RsuNode : public Application{
         Ipv4Address m_cloudServerAddr;
         int m_numberOfPeers;
         int m_transactionId;
+        int m_responseCount; // Count the number of valid responses from peers
+        uint32_t m_winnerId;
+        double m_payment;
+        double m_transThreshold;
         int m_totalOrdering;
         Blockchain m_blockchain;                   //The node's blockchain
         double m_meanOrderingTime;
@@ -98,6 +106,8 @@ class RsuNode : public Application{
         std::vector<Transaction> m_transaction;
         std::vector<Transaction> m_notValidatedTransaction;
         const int m_blockchainPort;
+
+        long privateKey;
         const int m_headersSizeBytes;         //81Bytes
         double m_averageTransacionSize;        //The average transaction size, Needed for compressed blocks
         const int m_countBytes;               //The size of count variable in message, 4 Bytes

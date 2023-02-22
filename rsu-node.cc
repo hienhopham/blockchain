@@ -37,6 +37,21 @@ namespace ns3 {
                         AddressValue(),
                         MakeAddressAccessor(&RsuNode::m_nodeIp),
                         MakeAddressChecker())
+        .AddAttribute("WinnerId",
+                        "The winning bid of this rsu." ,
+                        UintegerValue(16),
+                        MakeUintegerAccessor(&RsuNode::m_winnerId),
+                        MakeUintegerChecker<uint32_t>())
+        .AddAttribute("Payment",
+                        "The payment of the winning bid." ,
+                        DoubleValue(0),
+                        MakeDoubleAccessor(&RsuNode::m_payment),
+                        MakeDoubleChecker<double>())
+        .AddAttribute("TransThreshold",
+                        "The threshold for the payments." ,
+                        DoubleValue(0),
+                        MakeDoubleAccessor(&RsuNode::m_transThreshold),
+                        MakeDoubleChecker<double>())
         ;
         return tid;
     }
@@ -49,6 +64,7 @@ namespace ns3 {
         m_cloudServerSocket = 0;
         m_numberOfPeers = m_peersAddresses.size();
         m_transactionId = 1;
+        m_responseCount = 0;
         m_meanOrderingTime = 0;
         m_meanBlockReceiveTime = 0;
         m_previousBlockReceiveTime = 0;
@@ -111,11 +127,6 @@ namespace ns3 {
     RsuNode::StartApplication ()    // Called at time specified by Start
     {
         NS_LOG_FUNCTION (this);
-        // Create the socket if not already
-
-        srand(time(NULL) + GetNode()->GetId());
-        // NS_LOG_INFO ("Node " << GetNode()->GetId() << ": ip = " << m_nodeIp);
-        // NS_LOG_INFO ("Node " << GetNode()->GetId() << ": m_numberOfPeers = " << m_numberOfPeers);
 
         // Set up the listening socket, listen on every ip
         if (!m_listenSocket)
@@ -145,7 +156,17 @@ namespace ns3 {
         m_cloudServerSocket = Socket::CreateSocket (GetNode (), TcpSocketFactory::GetTypeId ());
         m_cloudServerSocket->Connect (InetSocketAddress (m_cloudServerAddr, m_blockchainPort));
 
-        CreateTransaction(0,GetNode ()->GetId());
+        std::pair<PublicKey, long> keyPair = ECDSA::generateKey();
+        publicKey = keyPair.first;
+        privateKey = keyPair.second;
+
+        std::cout << "===============================================\n";
+        std::cout << "generating ECDSA key pair for current rsu node id " << GetNode()->GetId() << ":\n";
+        publicKey.printKey();
+        std::cout << "private key = " << privateKey << "\n";
+        std::cout << "===============================================\n";
+
+        CreateTransaction();
     }
 
     void
@@ -215,31 +236,118 @@ namespace ns3 {
                 rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
                 d.Accept(writer);
 
+                rapidjson::Document::AllocatorType& d_allocator = d.GetAllocator();
 
+                std::cout << std::endl;
                 switch(d["message"].GetInt())
                 {
                     case REQUEST_TRANS:
                     {
+                        std::cout << "Node " << GetNode()->GetId() << " - REQUEST_TRANS from node " << 
+                            (uint32_t) d["transactions"][0]["rsuNodeId"].GetInt()  << "\n";
                         // TODO: verify the transaction using smart contract - Tuan
+                        rapidjson::Value& trans = d["transactions"];
 
-                        // TODO: If valid, sign transaction - Tuan
+                        double trx_timestamp = trans["timestamp"].GetDouble(); 
+                        double trx_payment = trans["payment"].GetDouble();
+
+                        static double trx_payment_low = 0.0;
+                        static double trx_payment_high = 100000.0;
+                        static double trx_timestamp_low = 0.0;
+                        static double trx_timestamp_high = 1000000000.0;
+
+                        long hashMsg = ECDSA::digitizeMessage(parsedPacket, publicKey.p);
+
+                        // // TODO: If valid, sign transaction - Tuan
+                        std::cout << "message = " << parsedPacket << std::endl;
+                        std::cout << "hashed message = " << ECDSA::sha256(parsedPacket) << std::endl;
+                        std::cout << "digitize hash = " << hashMsg << std::endl;
+                        std::cout << "If transaction payment >= " << trx_payment_low << " and < " << trx_payment_high <<
+                            ", transaction timestamp >= " << trx_timestamp_low << " and < " << trx_timestamp_high <<
+                            ", the transaction will be verified\n";
+
+                        if (trx_payment >= trx_payment_low && trx_payment < trx_payment_high && 
+                            trx_timestamp >= trx_timestamp_low && trx_timestamp < trx_payment_high) {
+                            // sign
+                            std::cout << "Payment = " << trx_payment << " and timestamp = " << trx_timestamp << std::endl;
+                            std::cout << "The condition is satisfied, this transaction will be verified\n";
+                            std::cout << "Signing transaction using ECDSA keys pair\n";
+                            publicKey.printKey();
+                            std::cout << "private key = " << privateKey << std::endl;
+                            std::pair<long, long> signature = {0, 0};
+                            std::pair<long, long> Point_0 = {0, 0};
+                            while (true) {
+                                signature = ECDSA::generateSignature(publicKey, privateKey, hashMsg);
+                                if (signature == Point_0) {
+                                    std::cout << "Failed to generate signature with current key pair, re-initialize public and private key\n";
+                                    std::pair<PublicKey, long> keyPair = ECDSA::generateKey();
+                                    publicKey = keyPair.first;
+                                    privateKey = keyPair.second;
+                                    std::cout << "===============================================\n";
+                                    std::cout << "generating ECDSA key pair for current rsu node id " << GetNode()->GetId() << ":\n";
+                                    publicKey.printKey();
+                                    std::cout << "private key = " << privateKey << "\n";
+                                    std::cout << "===============================================\n";
+                                } 
+                                else {
+                                    break;
+                                }
+                            }
+                            std::cout << "signature = (" << signature.first << ", " << signature.second << ")\n";
+
+                            trx.AddMember("isSigned", true, d_allocator);
+                            trx.AddMember("hashMsg", hashMsg, d_allocator);
+                            
+                            rapidjson::Value publicKeyInfo(rapidjson::kObjectType);
+                            publicKeyInfo.AddMember("p", publicKey.p, d_allocator);
+                            publicKeyInfo.AddMember("a", publicKey.a, d_allocator);
+                            publicKeyInfo.AddMember("n", publicKey.n, d_allocator);
+                            publicKeyInfo.AddMember("xG", publicKey.G.first, d_allocator);
+                            publicKeyInfo.AddMember("yG", publicKey.G.second, d_allocator);
+                            publicKeyInfo.AddMember("xQ", publicKey.Q.first, d_allocator);
+                            publicKeyInfo.AddMember("yQ", publicKey.Q.second, d_allocator);
+                            trx.AddMember("publicKey", publicKeyInfo, d_allocator);
+
+                            rapidjson::Value signatureInfo(rapidjson::kObjectType);
+                            signatureInfo.AddMember("r", signature.first, d_allocator);
+                            signatureInfo.AddMember("s", signature.second, d_allocator);
+                            trx.AddMember("signature", signatureInfo, d_allocator);
+                        }
+                        else {
+                            trx.AddMember("isSigned", false, d_allocator);
+                        }
 
                         // After signing, send response
-                        d.AddMember("responseFrom", GetNode()->GetId(), d.GetAllocator());
+                        d.AddMember("responseFrom", GetNode()->GetId(), d_allocator);
                         SendMessage(REQUEST_TRANS, RESPONSE_TRANS, d, from);
-                        std::cout<<"Node " << GetNode()->GetId() << " - REQUEST_TRANS \n";
                     }
 
                     case RESPONSE_TRANS:
                     {
     
-                        uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
-                        uint32_t requestTransFrom = (uint32_t) d["transactions"][0]["rsuNodeId"].GetInt();
+                        // uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
+                        uint32_t requestTransFrom = (uint32_t) d["transactions"]["rsuNodeId"].GetInt();
                         if (requestTransFrom == GetNode()->GetId()) {
                              // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
                             std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
+                             // // If the response is valid, then count up the "m_responseCount"
+                            m_responseCount++;
+                            std::cout<<"Current Number of Response: " << m_responseCount << "\n";
+                            
+                             // If the number of valid responses equals to number of peers, then the transaction is valid. 
+                            if (m_responseCount == m_numberOfPeers){
+                                
+                                std::cout<< "Sending the  Valid Transaction of " << GetNode()->GetId() <<  " to  Cloud Server\n";
+                                SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
+                                m_responseCount = 0;
+                            }
+                        }
+                            // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
+                            // std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
+                            d.EraseMember("responseFrom");
+                            d.AddMember("requestBlockFrom", GetNode()->GetId(), d.GetAllocator());
 
-                            SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
+                            
                         }
                     }
                 }
@@ -268,17 +376,17 @@ namespace ns3 {
     }
 
     void
-    RsuNode::CreateTransaction(double payment, int winnerId)
+    RsuNode::CreateTransaction()
     {
         NS_LOG_FUNCTION(this);
 
         rapidjson::Document transD;
 
         int transId = m_transactionId;
-        double tranTimestamp = Simulator::Now().GetSeconds();
+        double tranTimestamp = Simulator::Now().GetPicoSeconds();
         transD.SetObject();
 
-        Transaction newTrans(GetNode()->GetId(), transId, tranTimestamp, payment, winnerId);
+        Transaction newTrans(GetNode()->GetId(), transId, tranTimestamp, m_payment, m_winnerId);
 
         rapidjson::Value value;
         rapidjson::Value array(rapidjson::kArrayType);
@@ -305,8 +413,8 @@ namespace ns3 {
         value = newTrans.GetWinnerId();
         transInfo.AddMember("winnerId", value, transD.GetAllocator());
 
-        array.PushBack(transInfo, transD.GetAllocator());
-        transD.AddMember("transactions", array, transD.GetAllocator());
+        // array.PushBack(transInfo, transD.GetAllocator());
+        transD.AddMember("transactions", transInfo, transD.GetAllocator());
 
         m_transaction.push_back(newTrans);
         //m_notValidatedTransaction.push_back(newTrans);
@@ -322,10 +430,15 @@ namespace ns3 {
             m_peersSockets[*i]->Send(delimiter, 1, 0);
         
         }
-        //std::cout<< "time : "<<Simulator::Now().GetSeconds() << ", Node type: "<< m_committerType <<" - NodeId: " <<GetNode()->GetId() << " created and sent transaction\n";
         m_transactionId++;
 
-        // ScheduleNextTransaction();
+        int miliSec = 250;
+        // if (GetNode()->GetId() % 2 == 0) {
+        //     miliSec = 250;
+        // } else {
+        //     miliSec = 251;
+        // }
+        Simulator::Schedule(MilliSeconds(miliSec), &RsuNode::CreateTransaction, this);
 
     }
 

@@ -122,7 +122,6 @@ namespace ns3 {
 
             int GetWinnerId(void) const;
             void SetWinnerId(int m_winnerId);
-            void SetValidation();
 
             Transaction& operator = (const Transaction &tranSource);     //Assignment Constructor
 
@@ -136,7 +135,6 @@ namespace ns3 {
             double m_timeStamp;
             double m_payment; 
             int m_winnerId;
-            bool m_validatation; 
 
     };
 
