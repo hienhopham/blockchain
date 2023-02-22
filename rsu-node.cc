@@ -199,7 +199,6 @@ namespace ns3 {
         Ptr<Packet> packet;
         Address from;
         //double newBlockReceiveTime = Simulator::Now().GetSeconds();
-
         while((packet = socket->RecvFrom(from)))
         {
             if(packet->GetSize() == 0)
@@ -244,7 +243,7 @@ namespace ns3 {
                     case REQUEST_TRANS:
                     {
                         std::cout << "Node " << GetNode()->GetId() << " - REQUEST_TRANS from node " << 
-                            (uint32_t) d["transactions"][0]["rsuNodeId"].GetInt()  << "\n";
+                            (uint32_t) d["transactions"]["rsuNodeId"].GetInt()  << "\n";
                         // TODO: verify the transaction using smart contract - Tuan
                         rapidjson::Value& trans = d["transactions"];
 
@@ -295,8 +294,8 @@ namespace ns3 {
                             }
                             std::cout << "signature = (" << signature.first << ", " << signature.second << ")\n";
 
-                            trx.AddMember("isSigned", true, d_allocator);
-                            trx.AddMember("hashMsg", hashMsg, d_allocator);
+                            trans.AddMember("isSigned", true, d_allocator);
+                            trans.AddMember("hashMsg", hashMsg, d_allocator);
                             
                             rapidjson::Value publicKeyInfo(rapidjson::kObjectType);
                             publicKeyInfo.AddMember("p", publicKey.p, d_allocator);
@@ -306,15 +305,15 @@ namespace ns3 {
                             publicKeyInfo.AddMember("yG", publicKey.G.second, d_allocator);
                             publicKeyInfo.AddMember("xQ", publicKey.Q.first, d_allocator);
                             publicKeyInfo.AddMember("yQ", publicKey.Q.second, d_allocator);
-                            trx.AddMember("publicKey", publicKeyInfo, d_allocator);
+                            trans.AddMember("publicKey", publicKeyInfo, d_allocator);
 
                             rapidjson::Value signatureInfo(rapidjson::kObjectType);
                             signatureInfo.AddMember("r", signature.first, d_allocator);
                             signatureInfo.AddMember("s", signature.second, d_allocator);
-                            trx.AddMember("signature", signatureInfo, d_allocator);
+                            trans.AddMember("signature", signatureInfo, d_allocator);
                         }
                         else {
-                            trx.AddMember("isSigned", false, d_allocator);
+                            trans.AddMember("isSigned", false, d_allocator);
                         }
 
                         // After signing, send response
@@ -325,14 +324,13 @@ namespace ns3 {
                     case RESPONSE_TRANS:
                     {
     
-                        // uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
+                        uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
                         uint32_t requestTransFrom = (uint32_t) d["transactions"]["rsuNodeId"].GetInt();
                         if (requestTransFrom == GetNode()->GetId()) {
                              // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
                             std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
                              // // If the response is valid, then count up the "m_responseCount"
                             m_responseCount++;
-                            std::cout<<"Current Number of Response: " << m_responseCount << "\n";
                             
                              // If the number of valid responses equals to number of peers, then the transaction is valid. 
                             if (m_responseCount == m_numberOfPeers){
@@ -342,13 +340,11 @@ namespace ns3 {
                                 m_responseCount = 0;
                             }
                         }
-                            // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
-                            // std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
-                            d.EraseMember("responseFrom");
-                            d.AddMember("requestBlockFrom", GetNode()->GetId(), d.GetAllocator());
-
-                            
-                        }
+                        // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
+                        std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
+                        d.EraseMember("responseFrom");
+                        d.AddMember("requestBlockFrom", GetNode()->GetId(), d.GetAllocator());
+                        
                     }
                 }
             }
@@ -383,7 +379,7 @@ namespace ns3 {
         rapidjson::Document transD;
 
         int transId = m_transactionId;
-        double tranTimestamp = Simulator::Now().GetPicoSeconds();
+        double tranTimestamp = Simulator::Now().GetMilliSeconds();
         transD.SetObject();
 
         Transaction newTrans(GetNode()->GetId(), transId, tranTimestamp, m_payment, m_winnerId);
@@ -423,6 +419,7 @@ namespace ns3 {
         rapidjson::Writer<rapidjson::StringBuffer> tranWriter(transactionInfo);
         transD.Accept(tranWriter);
         // send to peers 
+
         for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
         {
             const uint8_t delimiter[] = "#";

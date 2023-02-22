@@ -195,7 +195,7 @@ namespace ns3 {
                 {
                     case REQUEST_BLOCK:
                     {
-                        rapidjson::Value& trx = d["transactions"][0];
+                        rapidjson::Value& trx = d["transactions"];
                         int rsuNodeId = trx["rsuNodeId"].GetInt();
                         int transId = trx["transId"].GetInt();
                         int responseFrom = d["responseFrom"].GetInt();
@@ -233,11 +233,6 @@ namespace ns3 {
                         // Need to define Block class
                         // TODO: Broadcast 
                         // Broadcast: Input(List of rsu nodes, block), Output(None)
-
-                        uint32_t requestBlockFrom = (uint32_t) d["requestBlockFrom"].GetInt();
-
-                        std::cout<<"Node " << GetNode()->GetId() << " receives REQUEST_BLOCK from: " << requestBlockFrom << "\n" << parsedPacket << "\n";
-
                     }
             
                 }
