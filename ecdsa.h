@@ -41,8 +41,10 @@ public:
     static std::pair<PublicKey, long> generateKey();
     static std::string sha256(std::string input);
     static long digitizeMessage(std::string message, long p);
-    static std::pair<long, long> generateSignature(long p, long a, long b, std::pair<long, long> G, long n, long privateKey, long hashMsg);
-    static bool verifySignature(PublicKey publicKey, long privateKey, std::pair<long, long> signature, long n, long hashMsg);
+    // static std::pair<long, long> generateSignature(long p, long a, long b, std::pair<long, long> G, long n, long privateKey, long hashMsg);
+    static std::pair<long, long> generateSignature(PublicKey publicKey, long privateKey, long hashMsg);
+    static bool verifySignature(long hashMsg, long p, long a, long n, long xG, long yG, long xQ, long yQ, long r, long s) ;
+    // static bool verifySignature(PublicKey publicKey, std::pair<long, long> signature, long n, long hashMsg);
 
 };
 
