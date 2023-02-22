@@ -43,6 +43,8 @@ class RsuNode : public Application{
 
         PublicKey publicKey;
         
+        void SetProtocolType (enum ProtocolType protocolType);
+        
 
     protected:
 
@@ -88,14 +90,32 @@ class RsuNode : public Application{
         uint32_t m_winnerId;
         double m_payment;
         double m_transThreshold;
+        int m_totalOrdering;
+        Blockchain m_blockchain;                   //The node's blockchain
+        double m_averageTransacionSize;        //The average transaction size, Needed for compressed blocks
+        double m_meanOrderingTime;
+        double m_meanBlockReceiveTime;         //The mean time interval between two consecutive blocks (10~15sec)
+        double m_previousBlockReceiveTime;     //The time that the node received the previous block
+        double m_meanBlockPropagationTime;     //The mean time that the node has to wait in order to receive a newly mined block
+        double m_meanBlockSize;                //The mean Block size
+        nodeStatistics *m_nodeStats;                       // Struct holding the node stats
 
         std::vector<Ipv4Address> m_peersAddresses;
         std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;
         std::map<Address, std::string> m_bufferedData;
         std::vector<Transaction> m_transaction;
+        std::vector<Transaction> m_notValidatedTransaction;
         const int m_blockchainPort;
 
         long privateKey;
+        const int m_headersSizeBytes;         //81Bytes
+        const int m_blockchainMessageHeader;  //The size of the Blockchain Message Header, 90 Bytes
+        const int m_countBytes;               //The size of count variable in message, 4 Bytes
+        const int m_inventorySizeBytes;       //The size of inventories in INV messages,36Bytes
+
+        
+
+        enum ProtocolType m_protocolType;                     // protocol type
 };
 
 }
