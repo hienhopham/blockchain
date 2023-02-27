@@ -26,8 +26,6 @@ namespace ns3{
             virtual void StartApplication(void);
             virtual void StopApplication(void);
             virtual void HandleRead (Ptr<Socket> socket);
-            void ScheduleNextMiningEvent (void);
-            virtual void MineBlock(void);
 
 
             uint32_t m_fixedBlockSize;
