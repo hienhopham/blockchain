@@ -199,6 +199,7 @@ namespace ns3 {
                         rapidjson::Value& trx = d["transactions"];
                         int rsuNodeId = trx["rsuNodeId"].GetInt();
                         int transId = trx["transId"].GetInt();
+
                         int responseFrom = d["responseFrom"].GetInt();
                         std::cout << "Node " << GetNode()->GetId() << " receives REQUEST_BLOCK from Node " << rsuNodeId << std::endl;
                         std::cout << parsedPacket << std::endl;
@@ -319,7 +320,6 @@ namespace ns3 {
                                 trx.AddMember("verified", false, d.GetAllocator());
                             }
                         }
-                        
                     }
             
                 }

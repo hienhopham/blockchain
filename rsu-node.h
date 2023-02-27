@@ -45,6 +45,8 @@ class RsuNode : public Application{
         PublicKey publicKey;
         
         void SetProtocolType (enum ProtocolType protocolType);
+
+        void SetNodeStats (nodeStatistics *nodeStats); 
         
 
     protected:
@@ -62,6 +64,10 @@ class RsuNode : public Application{
         void HandlePeerError (Ptr<Socket> socket);
 
         void CreateTransaction();
+
+        bool HasResultTransaction(int rsuNodeId, int transId, double winnerId, int payment);
+
+        void AdvertiseNewTransaction(const Transaction &newTrans, enum Messages megType, Ipv4Address receivedFromIpv4);
 
         /**
          * \brief Sends a message to a peer
@@ -100,12 +106,18 @@ class RsuNode : public Application{
         double m_meanBlockPropagationTime;     //The mean time that the node has to wait in order to receive a newly mined block
         double m_meanBlockSize;                //The mean Block size
         nodeStatistics *m_nodeStats;                       // Struct holding the node stats
+        double m_meanLatency;
+        int m_totalCreatedTransaction;
+        double m_tStart;
+        double m_tFinish;
 
+        std::vector<Transaction> m_resultTransaction;
         std::vector<Ipv4Address> m_peersAddresses;
         std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;
         std::map<Address, std::string> m_bufferedData;
         std::vector<Transaction> m_transaction;
         std::vector<Transaction> m_notValidatedTransaction;
+
         const int m_blockchainPort;
 
         long privateKey;
