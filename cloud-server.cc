@@ -56,7 +56,6 @@ namespace ns3 {
         m_minerGeneratedBlocks = 0;
         // HARDCODE
         m_fixedBlockTimeGeneration = 15;
-        long blockSize = -1;
 
         std::random_device rd;
         m_generator.seed(rd());
@@ -117,6 +116,16 @@ namespace ns3 {
         }
         ScheduleNextMiningEvent();
         
+        std::pair<PublicKey, long> keyPair = ECDSA::generateKey();
+        publicKey = keyPair.first;
+        privateKey = keyPair.second;
+
+        std::cout << "===============================================\n";
+        std::cout << "generating ECDSA key pair for current cloud server node id " << GetNode()->GetId() << ":\n";
+        publicKey.printKey();
+        std::cout << "private key = " << privateKey << "\n";
+        std::cout << "===============================================\n";
+
     }
 
     void
@@ -182,12 +191,42 @@ namespace ns3 {
                 d.Accept(writer);
 
 
+                std::cout << std::endl;
                 switch(d["message"].GetInt())
                 {
                     case REQUEST_BLOCK:
                     {
-                        //TODO: verify signature, reorder here - Tuan
-                        //TODO: create new block, broadcast to others here - Phuong
+                        rapidjson::Value& trx = d["transactions"];
+                        int rsuNodeId = trx["rsuNodeId"].GetInt();
+                        int transId = trx["transId"].GetInt();
+                        int responseFrom = d["responseFrom"].GetInt();
+                        std::cout << "Node " << GetNode()->GetId() << " receives REQUEST_BLOCK from Node " << rsuNodeId << std::endl;
+                        std::cout << parsedPacket << std::endl;
+                        bool isSigned = trx["isSigned"].GetBool();
+                        if (isSigned) {
+                            std::cout << "Verifying signature for transaction id " << transId << " of Rsu Node id " 
+                                                        << rsuNodeId << " requesting from Rsu Node id " << responseFrom << std::endl;
+                            bool isValidSignature = ECDSA::verifySignature(trx["hashMsg"].GetInt64(),
+                                                                           trx["publicKey"]["p"].GetInt64(),
+                                                                           trx["publicKey"]["a"].GetInt64(),
+                                                                           trx["publicKey"]["n"].GetInt64(),
+                                                                           trx["publicKey"]["xG"].GetInt64(),
+                                                                           trx["publicKey"]["yG"].GetInt64(),
+                                                                           trx["publicKey"]["xQ"].GetInt64(),
+                                                                           trx["publicKey"]["yQ"].GetInt64(),
+                                                                           trx["signature"]["r"].GetInt64(),
+                                                                           trx["signature"]["s"].GetInt64()
+                                                                           );
+                            if (isValidSignature) {
+                                std::cout << "This transaction is verified by the cloud server.\n";
+                                trx.AddMember("verified", true, d.GetAllocator());
+                            } 
+                            else {
+                                std::cout << "This transaction is not verified by the cloud server.\n";
+                                trx.AddMember("verified", false, d.GetAllocator());
+                            }
+                        }
+                        
                         //TODO: verify signature, reorder here - Tuan
                         //TODO: create new block, broadcast to others here - Phuong
                         // TODO: Create new block
@@ -195,7 +234,6 @@ namespace ns3 {
                         // Need to define Block class
                         // TODO: Broadcast 
                         // Broadcast: Input(List of rsu nodes, block), Output(None)
-                        std::cout<<"Node " << GetNode()->GetId() << " receives REQUEST_BLOCK \n";
                     }
             
                 }
