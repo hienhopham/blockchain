@@ -224,6 +224,7 @@ namespace ns3 {
                 rapidjson::Document d;
                 d.Parse(parsedPacket.c_str());
 
+
                 if(!d.IsObject())
                 {
                     NS_LOG_WARN("The parsed packet is corrupted");
@@ -344,6 +345,15 @@ namespace ns3 {
                         std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
                         d.EraseMember("responseFrom");
                         d.AddMember("requestBlockFrom", GetNode()->GetId(), d.GetAllocator());
+                        
+                    }
+
+                    case BROADCAST_BLOCK:
+                    {
+
+                    // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
+                    std::cout<<"Node " << GetNode()->GetId() << " receives - BROADCAST_BLOCK \n";
+                    std::cout << parsedPacket << "\n";
                         
                     }
                 }
