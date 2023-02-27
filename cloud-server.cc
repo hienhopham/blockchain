@@ -115,6 +115,7 @@ namespace ns3 {
             m_peersSockets[*i] = Socket::CreateSocket (GetNode (), TcpSocketFactory::GetTypeId ());
             m_peersSockets[*i]->Connect (InetSocketAddress (*i, m_blockchainPort));
         }
+        ScheduleNextMiningEvent();
         
     }
 
@@ -207,13 +208,13 @@ namespace ns3 {
     CloudServer::ScheduleNextMiningEvent(void)
     {
         NS_LOG_FUNCTION(this);
-        //std::cout<< "Schedule Mine application\n";
+        std::cout<< "Schedule Mine application\n";
 
         if(m_fixedBlockTimeGeneration > 0)
         {
             m_nextBlockTime = m_fixedBlockTimeGeneration;
             m_nextMiningEvent = Simulator::Schedule(Seconds(m_fixedBlockTimeGeneration), &CloudServer::MineBlock, this);
-            //std::cout<<"m_nextBlockTime(1) : " << m_nextBlockTime <<"\n";
+            std::cout<<"m_nextBlockTime(1) : " << m_nextBlockTime <<"\n";
         }
         else
         {
@@ -233,7 +234,7 @@ namespace ns3 {
     CloudServer::MineBlock(void)
     {   
         NS_LOG_FUNCTION(this);
-        //std::cout<< "Start MineBlock function\n";
+        std::cout<< "Start MineBlock function\n";
         rapidjson::Document inv;
         rapidjson::Document block;
 
@@ -268,7 +269,7 @@ namespace ns3 {
             std::normal_distribution<double> dist(23.0, 2.0);
             //m_nextBlockSize = dist(m_generator);
             m_nextBlockSize = (int)(dist(m_generator)*1000);
-            //std::cout <<(int)(dist(m_generator)*1000) <<"\n";
+            std::cout <<(int)(dist(m_generator)*1000) <<"\n";
         }
 
         if(m_nextBlockSize < m_averageTransacionSize)
@@ -290,12 +291,12 @@ namespace ns3 {
             m_meanOrderingTime = (m_meanOrderingTime*static_cast<double>(m_totalOrdering-1) + (Simulator::Now().GetSeconds() - trans_it->GetTransTimeStamp()))/static_cast<double>(m_totalOrdering);
 
         }
-        //std::cout<<m_notValidatedTransaction.size()<<"\n";
+        std::cout<<m_notValidatedTransaction.size()<<"\n";
         m_meanNumberofTransactions = (m_meanNumberofTransactions*static_cast<double>(m_minerGeneratedBlocks) + m_notValidatedTransaction.size())/static_cast<double>(m_minerGeneratedBlocks+1);
         newBlock.SetTransactions(m_notValidatedTransaction);
         m_notValidatedTransaction.clear();
 
-        //newBlock.PrintAllTransaction();
+        newBlock.PrintAllTransaction();
         
         rapidjson::Value value;
         rapidjson::Value array(rapidjson::kArrayType);
@@ -333,24 +334,34 @@ namespace ns3 {
         rapidjson::Writer<rapidjson::StringBuffer> blockWriter(blockInfo);
         block.Accept(blockWriter);
 
-        //std::cout<< "MineBlock function : Add a new block in packet\n";
+        std::cout<< "MineBlock function : Add a new block in packet\n";
+
+        // for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
+        // {
+            
+        //     const uint8_t delimiter[] = "#";
+
+        //     m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(invInfo.GetString()), invInfo.GetSize(), 0);
+        //     m_peersSockets[*i]->Send(delimiter, 1, 0);
+            
+        //     m_nodeStats->invSentBytes += m_blockchainMessageHeader + m_countBytes + inv["inv"].Size()*m_inventorySizeBytes;
+        //     std::cout<< "Node : " << GetNode()->GetId() <<" complete minning and send packet to " << *i << " \n" ;
+        //     NS_LOG_INFO("At time " << Simulator::Now().GetSeconds()
+        //                 << " s blockchain miner " << GetNode()->GetId()
+        //                 << " sent a packet " << invInfo.GetString()
+        //                 << " to " << *i);
+            
+
+        // }
 
         for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
         {
             
             const uint8_t delimiter[] = "#";
-
             m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(invInfo.GetString()), invInfo.GetSize(), 0);
             m_peersSockets[*i]->Send(delimiter, 1, 0);
-            
-            m_nodeStats->invSentBytes += m_blockchainMessageHeader + m_countBytes + inv["inv"].Size()*m_inventorySizeBytes;
-            //std::cout<< "Node : " << GetNode()->GetId() <<" complete minning and send packet to " << *i << " \n" ;
-            NS_LOG_INFO("At time " << Simulator::Now().GetSeconds()
-                        << " s blockchain miner " << GetNode()->GetId()
-                        << " sent a packet " << invInfo.GetString()
-                        << " to " << *i);
-            
-
+            std::cout<<invInfo.GetString();
+            std::cout<< "Node : " << GetNode()->GetId() <<" complete minning and send packet to " << *i << " \n" ;
         }
         
         m_minerAverageBlockGenInterval = m_minerGeneratedBlocks/static_cast<double>(m_minerGeneratedBlocks+1)*m_minerAverageBlockGenInterval
@@ -362,7 +373,7 @@ namespace ns3 {
         m_minerGeneratedBlocks++;
 
         ScheduleNextMiningEvent();
-        //std::cout<< "MineBlock function : finish MinBLock\n";
+        std::cout<< "MineBlock function : finish MinBLock\n";
 
     }
 }
