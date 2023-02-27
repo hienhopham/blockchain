@@ -46,9 +46,10 @@ namespace ns3 {
         OTHER
     };
 
+    /// @brief 
     typedef struct{
 
-        int     nodeId;                         // blockchain node ID
+        int     rsuNodeId;                       
         double  meanBlockReceiveTime;        // average of Block receive time
         double  meanBlockPropagationTime;    // average of Block propagation time
         double  meanBlockSize;               // average of Block Size
@@ -80,7 +81,8 @@ namespace ns3 {
         double  meanLatency;
         int     nodeType;
         double  meanNumberofTransactions;
-      
+        int responseCount;
+        int numberOfPeers;
     
     } nodeStatistics;
 

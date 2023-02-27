@@ -17,7 +17,10 @@
 #include "rsu-node.h"
 #include "blockchain.h"
 #include <fstream>
+#include <time.h>
+#include <sys/time.h>
 
+static double GetWallTime();
 
 namespace ns3 {
 
@@ -71,6 +74,10 @@ namespace ns3 {
         m_meanBlockPropagationTime = 0;
         m_meanBlockSize = 0;
         m_totalOrdering = 0;
+        m_meanLatency = 0;
+        m_totalCreatedTransaction = 0;
+        m_tStart = 0;
+        m_tFinish = 0;
     }
 
     RsuNode::~RsuNode(void)
@@ -123,6 +130,15 @@ namespace ns3 {
         m_protocolType = protocolType;
     }
 
+    /// @brief 
+    /// @param nodeStats 
+    void
+    RsuNode::SetNodeStats (nodeStatistics *nodeStats)
+    {
+        NS_LOG_FUNCTION(this);
+        m_nodeStats = nodeStats;
+    }
+
     void
     RsuNode::StartApplication ()    // Called at time specified by Start
     {
@@ -152,6 +168,9 @@ namespace ns3 {
             m_peersSockets[*i]->Connect (InetSocketAddress (*i, m_blockchainPort));
         }
 
+        m_nodeStats->rsuNodeId = GetNode()->GetId();
+        m_nodeStats->meanLatency = 0;
+
         //Set up the sending socket for cloud server
         m_cloudServerSocket = Socket::CreateSocket (GetNode (), TcpSocketFactory::GetTypeId ());
         m_cloudServerSocket->Connect (InetSocketAddress (m_cloudServerAddr, m_blockchainPort));
@@ -166,7 +185,10 @@ namespace ns3 {
         std::cout << "private key = " << privateKey << "\n";
         std::cout << "===============================================\n";
 
+        m_tStart = GetWallTime();
+
         CreateTransaction();
+
     }
 
     void
@@ -190,6 +212,9 @@ namespace ns3 {
             m_cloudServerSocket->Close ();
             m_cloudServerSocket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
         }
+
+        m_nodeStats->meanLatency = m_meanLatency;
+    
 
     }
 
@@ -326,20 +351,40 @@ namespace ns3 {
     
                         uint32_t responseFrom = (uint32_t) d["responseFrom"].GetInt();
                         uint32_t requestTransFrom = (uint32_t) d["transactions"]["rsuNodeId"].GetInt();
+                        //double timestamp = d["transactions"]["timestamp"].GetDouble();
+
                         if (requestTransFrom == GetNode()->GetId()) {
                              // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
                             std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
                              // // If the response is valid, then count up the "m_responseCount"
                             m_responseCount++;
                             
+                            m_nodeStats->responseCount = m_responseCount;
+                            m_nodeStats->numberOfPeers = m_numberOfPeers;
+                            
                              // If the number of valid responses equals to number of peers, then the transaction is valid. 
                             if (m_responseCount == m_numberOfPeers){
                                 
                                 std::cout<< "Sending the  Valid Transaction of " << GetNode()->GetId() <<  " to  Cloud Server\n";
                                 SendMessage(RESPONSE_TRANS, REQUEST_BLOCK, d, m_cloudServerSocket);
+                                m_totalCreatedTransaction++;
+                                m_tFinish = GetWallTime();
+        
+                                m_meanLatency = (m_meanLatency*static_cast<double>(m_totalCreatedTransaction - 1) + (m_tFinish - m_tStart))/static_cast<double>(m_totalCreatedTransaction);
+                                m_nodeStats->meanLatency = m_meanLatency;
+                                m_nodeStats->rsuNodeId = GetNode()->GetId();
+                                
+                                
+                                //Measure latency for each node
+                                std::cout<<"Latency: "<< m_meanLatency <<"s , Node "<<GetNode()->GetId()<< " confirmed that transactions had succeeded\n";
+                                //std::cout<< "Node: " << m_nodeStats->rsuNodeId <<  "\n";
+                                //std::cout<< "Check: " << m_nodeStats->meanLatency <<  "\n";
+                
                                 m_responseCount = 0;
+
                             }
                         }
+
                         // TODO: Handle response, if get response valid from all peers then send the valid transaction to cloud sever - Tien
                         std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
                         d.EraseMember("responseFrom");
@@ -485,4 +530,14 @@ namespace ns3 {
     }
 
 
+}
+
+static double GetWallTime()
+{
+    struct timeval time;
+    if(gettimeofday(&time, NULL))
+    {
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }

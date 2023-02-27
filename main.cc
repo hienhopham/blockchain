@@ -17,8 +17,12 @@
 #include "rsu-node.h"
 #include "cloud-server.h"
 #include "ipv4-address-helper-custom.h"
+#include "blockchain.h"
 
 using namespace ns3;
+
+static double GetWallTime();
+void PrintTotalStats(nodeStatistics *stats, uint32_t totalNodes, double tStart, double tFinish);	
 
 NS_LOG_COMPONENT_DEFINE("Blockchain");
 
@@ -37,11 +41,17 @@ int main(int argc, char *argv[])
 	const std::string winnersPath = currentPath + "/scratch/blockchain/auction/winners.txt";
 	const std::string paymentsPath = currentPath + "/scratch/blockchain/auction/payments.txt";
 	const double transThreshold = 2;
+	double tStart = 0;
+	double tFinish = 0;
+
+	Time::SetResolution(Time::NS);
 
 	CommandLine cmd (__FILE__);
 	cmd.AddValue ("numOfRsu", "Number of rsu nodes", numOfRsu);
 	cmd.AddValue ("transThreshold", "The threshold for the payments", numOfRsu);
 	cmd.Parse (argc, argv);
+
+	nodeStatistics *stats = new nodeStatistics[numOfRsu];
 
 	NS_LOG_INFO("\nNumber of Rsu nodes:" << numOfRsu);
 
@@ -134,7 +144,8 @@ int main(int argc, char *argv[])
 			Ptr<RsuNode> rsuNode = factory.Create<RsuNode>();
 
 			rsuNode->SetPeersAddresses(node.second);
-			rsuNode->SetCloudServerAddress(nodeToCloudServerConnectionsIp[node.first]);
+			rsuNode->SetNodeStats(stats);
+			rsuNode->SetCloudServerAddress(nodeToCloudServerConnectionsIp[node.first]);	
 			targetNode->AddApplication(rsuNode);
 
 			rsuNodes.Add(rsuNode);
@@ -146,6 +157,7 @@ int main(int argc, char *argv[])
 			Ptr<CloudServer> cloudServer = factory.Create<CloudServer>();
 
 			cloudServer->SetPeersAddresses(node.second);
+
 			targetNode->AddApplication(cloudServer);
 
 			cloudServerContainer.Add(cloudServer);
@@ -158,12 +170,44 @@ int main(int argc, char *argv[])
 	cloudServerContainer.Start(Seconds(0.1));
 	cloudServerContainer.Stop(MilliSeconds(2500));
 
+	tStart = GetWallTime();
 
     Simulator::Stop(MilliSeconds(2500));
 	Simulator::Run();
     Simulator::Destroy();
 
+	tFinish = GetWallTime();
+	PrintTotalStats(stats, numOfRsu, tStart, tFinish);
 
+	delete[] stats;
   	return 0;
 
+}
+
+
+void PrintTotalStats(nodeStatistics *stats, uint32_t totalNodes, double tStart, double tFinish)
+{
+	double meanLatency = 0.0;
+
+	for (uint32_t it = 0; it < totalNodes; it++ )
+    { 
+
+		if(stats[it].responseCount == stats[it].numberOfPeers) {
+			meanLatency = (meanLatency*it + stats[it].meanLatency)/static_cast<double>(it+1);
+		}
+	}
+
+	std::cout << "Average Latency =" << meanLatency <<"s \n";
+	std::cout << "Simulator Time =" << tFinish -  tStart<<"s \n";
+
+}
+
+static double GetWallTime()
+{
+    struct timeval time;
+    if(gettimeofday(&time, NULL))
+    {
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }

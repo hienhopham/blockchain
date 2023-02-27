@@ -11,7 +11,7 @@ namespace ns3 {
     {
         REQUEST_TRANS,  //0
         RESPONSE_TRANS,    //1
-        REQUEST_BLOCK,          //2    
+        REQUEST_BLOCK,          //2   
     };
 }
 
