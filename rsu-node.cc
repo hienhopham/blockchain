@@ -249,12 +249,22 @@ namespace ns3 {
                 rapidjson::Document d;
                 d.Parse(parsedPacket.c_str());
 
-                if(!d.IsObject())
-                {
-                    NS_LOG_WARN("The parsed packet is corrupted");
-                    totalReceivedData.erase(0, pos + delimiter.length());
-                    continue;
-                }
+                // std::cout << "message = " << parsedPacket << std::endl;
+
+
+                // if (d.HasParseError()) {
+                //     std::cout<< GetNode()->GetId() << ": Parsing error: " << GetParseError_En(d.GetParseError()) << "\n";
+                //     totalReceivedData.erase(0, pos + delimiter.length());
+                //     continue;
+                // }
+
+
+                // if(!d.IsObject())
+                // {
+                //     std::cout<<"The parsed packet is corrupted"<< "\n";
+                //     totalReceivedData.erase(0, pos + delimiter.length());
+                //     continue;
+                // }
 
                 rapidjson::StringBuffer buffer;
                 rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -275,7 +285,7 @@ namespace ns3 {
                         double trx_timestamp = trans["timestamp"].GetDouble(); 
                         double trx_payment = trans["payment"].GetDouble();
 
-                        static double trx_payment_low = 0.0;
+                        static double trx_payment_low = m_transThreshold;
                         static double trx_payment_high = 100000.0;
                         static double trx_timestamp_low = 0.0;
                         static double trx_timestamp_high = 1000000000.0;
@@ -344,6 +354,7 @@ namespace ns3 {
                         // After signing, send response
                         d.AddMember("responseFrom", GetNode()->GetId(), d_allocator);
                         SendMessage(REQUEST_TRANS, RESPONSE_TRANS, d, from);
+                        break;
                     }
 
                     case RESPONSE_TRANS:
@@ -389,6 +400,15 @@ namespace ns3 {
                         std::cout<<"Node " << GetNode()->GetId() << " receives - RESPONSE_TRANS from " << responseFrom << "\n";
                         d.EraseMember("responseFrom");
                         d.AddMember("requestBlockFrom", GetNode()->GetId(), d.GetAllocator());
+                        break;
+                        
+                    }
+
+                    case BROADCAST_BLOCK:
+                    {
+                        std::cout<<"Node " << GetNode()->GetId() << " receives - BROADCAST_BLOCK from cloud server id 0" << "\n";
+                        std::cout << parsedPacket << "\n";
+                        break;
                         
                     }
                 }
@@ -469,17 +489,12 @@ namespace ns3 {
         {
             const uint8_t delimiter[] = "#";
             m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(transactionInfo.GetString()), transactionInfo.GetSize(), 0);
-            m_peersSockets[*i]->Send(delimiter, 1, 0);
+            // m_peersSockets[*i]->Send(delimiter, 1, 0);
         
         }
         m_transactionId++;
 
         int miliSec = 250;
-        // if (GetNode()->GetId() % 2 == 0) {
-        //     miliSec = 250;
-        // } else {
-        //     miliSec = 251;
-        // }
         Simulator::Schedule(MilliSeconds(miliSec), &RsuNode::CreateTransaction, this);
 
     }
