@@ -238,7 +238,6 @@ namespace ns3 {
                                 {
                                     std::normal_distribution<double> dist(23.0, 2.0);
                                     m_nextBlockSize = (int)(dist(m_generator)*1000);
-                                    std::cout <<(int)(dist(m_generator)*1000) <<"\n";
                                 }
                                 Block newBlock(height, GetNode()->GetId(), 0, m_blockchain.GetCurrentTopBlock()->GetMinerId(), m_nextBlockSize,
                                                 Simulator::Now().GetSeconds(), Simulator::Now().GetSeconds(), Ipv4Address("127.0.0.1"));

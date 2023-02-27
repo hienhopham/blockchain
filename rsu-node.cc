@@ -474,22 +474,28 @@ namespace ns3 {
         value = newTrans.GetWinnerId();
         transInfo.AddMember("winnerId", value, transD.GetAllocator());
 
-        // array.PushBack(transInfo, transD.GetAllocator());
         transD.AddMember("transactions", transInfo, transD.GetAllocator());
 
-        m_transaction.push_back(newTrans);
-        //m_notValidatedTransaction.push_back(newTrans);
+        transD.AddMember("toRsuIp", 0, transD.GetAllocator());
 
-        rapidjson::StringBuffer transactionInfo;
-        rapidjson::Writer<rapidjson::StringBuffer> tranWriter(transactionInfo);
-        transD.Accept(tranWriter);
+        m_transaction.push_back(newTrans);
+
+
         // send to peers 
 
         for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
         {
+            rapidjson::Value::MemberIterator it = transD.FindMember("toRsuIp");
+            if (it != transD.MemberEnd()) {
+                it->value.SetInt(i->Get());
+            }
+
+            rapidjson::StringBuffer transactionInfo;
+            rapidjson::Writer<rapidjson::StringBuffer> tranWriter(transactionInfo);
+            transD.Accept(tranWriter);
             const uint8_t delimiter[] = "#";
             m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(transactionInfo.GetString()), transactionInfo.GetSize(), 0);
-            // m_peersSockets[*i]->Send(delimiter, 1, 0);
+            m_peersSockets[*i]->Send(delimiter, 1, 0);
         
         }
         m_transactionId++;

@@ -165,14 +165,14 @@ int main(int argc, char *argv[])
     }
 
     rsuNodes.Start(Seconds(0.1));
-    rsuNodes.Stop(MilliSeconds(2500));
+    rsuNodes.Stop(MilliSeconds(4000));
 
 	cloudServerContainer.Start(Seconds(0.1));
-	cloudServerContainer.Stop(MilliSeconds(2500));
+	cloudServerContainer.Stop(MilliSeconds(4000));
 
 	tStart = GetWallTime();
 
-    Simulator::Stop(MilliSeconds(2500));
+    Simulator::Stop(MilliSeconds(6000));
 	Simulator::Run();
     Simulator::Destroy();
 
@@ -197,6 +197,8 @@ void PrintTotalStats(nodeStatistics *stats, uint32_t totalNodes, double tStart, 
 		}
 	}
 
+	std::cout << std::endl;
+	std::cout << "===============================================\n";
 	std::cout << "Average Latency =" << meanLatency <<"s \n";
 	std::cout << "Simulator Time =" << tFinish -  tStart<<"s \n";
 
