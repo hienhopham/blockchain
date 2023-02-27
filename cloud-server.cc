@@ -114,7 +114,7 @@ namespace ns3 {
             m_peersSockets[*i] = Socket::CreateSocket (GetNode (), TcpSocketFactory::GetTypeId ());
             m_peersSockets[*i]->Connect (InetSocketAddress (*i, m_blockchainPort));
         }
-        ScheduleNextMiningEvent();
+        // ScheduleNextMiningEvent();
         
         std::pair<PublicKey, long> keyPair = ECDSA::generateKey();
         publicKey = keyPair.first;
@@ -220,6 +220,106 @@ namespace ns3 {
                             if (isValidSignature) {
                                 std::cout << "This transaction is verified by the cloud server.\n";
                                 trx.AddMember("verified", true, d.GetAllocator());
+
+
+                                int height2 = m_blockchain.GetCurrentTopBlock()->GetBlockHeight() + 1;
+                                if(height2 == 1)
+                                {
+                                    m_fistToMine = true;
+                                    m_timeStart = GetWallTime();
+                                }
+
+                                if(m_fixedBlockSize > 0)
+                                {
+                                    m_nextBlockSize = m_fixedBlockSize;
+                                    
+                                }
+                                else
+                                {
+                                    std::normal_distribution<double> dist(23.0, 2.0);
+                                    //m_nextBlockSize = dist(m_generator);
+                                    m_nextBlockSize = (int)(dist(m_generator)*1000);
+                                    std::cout <<(int)(dist(m_generator)*1000) <<"\n";
+                                }
+                                Block newBlock(height2, GetNode()->GetId(), 0, m_blockchain.GetCurrentTopBlock()->GetMinerId(), m_nextBlockSize,
+                                                Simulator::Now().GetSeconds(), Simulator::Now().GetSeconds(), Ipv4Address("127.0.0.1"));
+                                
+                                /*
+                                * Push transactions to new Blocks
+                                */
+
+                                std::vector<Transaction> addedTransaction;
+                                Transaction newTrans; 
+                                newTrans.SetTransId(transId);
+                                newTrans.SetPayment(trx["payment"].GetFloat());
+                                newTrans.SetRsuNodeId(rsuNodeId);
+                                newTrans.SetWinnerId(trx["winnerId"].GetInt());
+                                // newTrans.SetValidation(trx["verified"].GetBool());
+                                newTrans.SetTransTimeStamp(trx["timestamp"].GetInt());
+
+                                addedTransaction.push_back(newTrans);
+                                
+                                // std::cout<<addedTransaction.size()<<"\n";
+                                // m_meanNumberofTransactions = (m_meanNumberofTransactions*static_cast<double>(m_minerGeneratedBlocks) + m_notValidatedTransaction.size())/static_cast<double>(m_minerGeneratedBlocks+1);
+                                newBlock.SetTransactions(addedTransaction);
+                                // m_notValidatedTransaction.clear();
+
+                                newBlock.PrintAllTransaction();
+                                m_blockchain.AddBlock(newBlock);
+
+
+
+                                rapidjson::Document blockD;
+
+                                blockD.SetObject();
+                                rapidjson::Value value;
+                                rapidjson::Value array(rapidjson::kArrayType);
+                                rapidjson::Value transInfo(rapidjson::kObjectType);
+
+                                value.SetString("block");
+                                blockD.AddMember("type", value, blockD.GetAllocator());
+
+                                value = BROADCAST_BLOCK;
+                                blockD.AddMember("message", value, blockD.GetAllocator());
+
+                                value = newTrans.GetRsuNodeId();
+                                transInfo.AddMember("rsuNodeId", value, blockD.GetAllocator());
+
+                                value = newTrans.GetTransId();
+                                transInfo.AddMember("transId", value, blockD.GetAllocator());
+
+                                value = newTrans.GetTransTimeStamp();
+                                transInfo.AddMember("timestamp", value, blockD.GetAllocator());
+
+                                value = newTrans.GetPayment();
+                                transInfo.AddMember("payment", value, blockD.GetAllocator());
+
+                                value = newTrans.GetWinnerId();
+                                transInfo.AddMember("winnerId", value, blockD.GetAllocator());
+
+                                // value = newTrans.IsValidated();
+                                transInfo.AddMember("validation", true, blockD.GetAllocator());
+
+
+                                array.PushBack(transInfo, blockD.GetAllocator());
+                                blockD.AddMember("block", array, blockD.GetAllocator());
+
+
+                                
+
+                                rapidjson::StringBuffer blockInfo;
+                                rapidjson::Writer<rapidjson::StringBuffer> blockWriter(blockInfo);
+                                blockD.Accept(blockWriter);
+                                // send to peers 
+
+                                for(std::vector<Ipv4Address>::const_iterator i = m_peersAddresses.begin(); i != m_peersAddresses.end(); ++i)
+                                {
+                                    const uint8_t delimiter[] = "#";
+                                    m_peersSockets[*i]->Send(reinterpret_cast<const uint8_t*>(blockInfo.GetString()), blockInfo.GetSize(), 0);
+                                    m_peersSockets[*i]->Send(delimiter, 1, 0);
+                                
+                                }
+                                
                             } 
                             else {
                                 std::cout << "This transaction is not verified by the cloud server.\n";
@@ -290,7 +390,7 @@ namespace ns3 {
 
         inv.SetObject();
         block.SetObject();
-
+        // int height = m_blockchain.GetCurrentTopBlock()->GetBlockHeight() + 1;
         if(height == 1)
         {
             m_fistToMine = true;
@@ -338,20 +438,18 @@ namespace ns3 {
         
         rapidjson::Value value;
         rapidjson::Value array(rapidjson::kArrayType);
-        //rapidjson::Value blockInfor(rapidjson::kObjectType);
+        // rapidjson::Value blockInfor(rapidjson::kObjectType);
 
         value.SetString("block");
         inv.AddMember("type", value, inv.GetAllocator());
+        inv.AddMember("message", BROADCAST_BLOCK, inv.GetAllocator());
 
-        // if(m_protocolType == STANDARD_PROTOCOL)
-        // {
-        //     // value = INV;
-        //     inv.AddMember("message", value, inv.GetAllocator());
 
-        //     value.SetString(blockHash.c_str(), blockHash.size(), inv.GetAllocator());
-        //     array.PushBack(value, inv.GetAllocator());
-        //     inv.AddMember("inv", array, inv.GetAllocator());
-        // }
+
+        value.SetString(blockHash.c_str(), blockHash.size(), inv.GetAllocator());
+        array.PushBack(value, inv.GetAllocator());
+
+        inv.AddMember("inv", array, inv.GetAllocator());
 
         m_meanBlockReceiveTime = (m_blockchain.GetTotalBlocks() - 1)/static_cast<double>(m_blockchain.GetTotalBlocks())*m_meanBlockReceiveTime
                                 + (currentTime - m_previousBlockReceiveTime)/(m_blockchain.GetTotalBlocks());
