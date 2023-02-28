@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	const std::string currentPath = std::getenv("PWD");
 	const std::string winnersPath = currentPath + "/scratch/blockchain/auction/winners.txt";
 	const std::string paymentsPath = currentPath + "/scratch/blockchain/auction/payments.txt";
-	const double transThreshold = 2;
+	double transThreshold = 2.0;
 	double tStart = 0;
 	double tFinish = 0;
 
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
 	CommandLine cmd (__FILE__);
 	cmd.AddValue ("numOfRsu", "Number of rsu nodes", numOfRsu);
-	cmd.AddValue ("transThreshold", "The threshold for the payments", numOfRsu);
+	cmd.AddValue ("transThreshold", "The threshold for the payments", transThreshold);
 	cmd.Parse (argc, argv);
 
 	nodeStatistics *stats = new nodeStatistics[numOfRsu];
@@ -126,6 +126,8 @@ int main(int argc, char *argv[])
 	ApplicationContainer rsuNodes;
 	ApplicationContainer cloudServerContainer;
 	ObjectFactory factory;
+
+	std::cout<<"transThreshold: " << transThreshold << "\n";
 
     for(auto &node : nodeToPeerConnections)
     {
