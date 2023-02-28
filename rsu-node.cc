@@ -500,7 +500,7 @@ namespace ns3 {
         }
         m_transactionId++;
 
-        int miliSec = 250;
+        int miliSec = 950;
         Simulator::Schedule(MilliSeconds(miliSec), &RsuNode::CreateTransaction, this);
 
     }
